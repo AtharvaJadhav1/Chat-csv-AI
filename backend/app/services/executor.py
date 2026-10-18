@@ -21,11 +21,11 @@ MAX_CHART_GROUPS = 50
 
 OP_LABEL = {
     "mean": "average", "median": "median", "min": "minimum", "max": "maximum",
-    "sum": "total", "count": "count", "nunique": "number of unique values", "std": "standard deviation",
+    "sum": "sum", "count": "count", "nunique": "number of unique values", "std": "standard deviation",
 }
 OP_PREFIX = {
     "mean": "average", "median": "median", "min": "min", "max": "max",
-    "sum": "total", "count": "count", "nunique": "unique_count", "std": "std",
+    "sum": "sum", "count": "count", "nunique": "unique_count", "std": "std",
 }
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -59,6 +59,8 @@ def describe_conditions(conditions: list[Condition]) -> str:
         else:
             value = c.value if not isinstance(c.value, list) else ", ".join(map(str, c.value))
             shown = fmt_num(value) if isinstance(value, float) else value
+            if isinstance(shown, str) and shown.endswith("T00:00:00"):
+                shown = shown[:-9]
             op = {"in": "is one of", "not_in": "is not one of"}.get(c.operator, c.operator)
             parts.append(f"{c.column} {op} {shown}")
     return " and ".join(parts)
@@ -200,40 +202,52 @@ def run_aggregation(df, plan, profile):
     )
 
 
+def metric_noun(op: str, target: str | None) -> str:
+    if not target:
+        return "number of rows"
+    word = OP_LABEL[op].split()[0]
+    return target if word in target.lower() else f"{OP_LABEL[op]} {target}"
+
+
 def run_groupby(df, plan, profile):
     sub = apply_conditions(df, plan.conditions)
     if sub.empty:
         return no_rows(plan.conditions)
-    group, target, op, grain = plan.group_by, plan.target_column, plan.operation, plan.date_grain
+    group, group2, target, op, grain = plan.group_by, plan.group_by_2, plan.target_column, plan.operation, plan.date_grain
     keyed = sub.assign(_key=group_key(sub[group], grain))
+    keys = ["_key"] + ([group2] if group2 else [])
     if target:
-        result = keyed.groupby("_key")[target].agg(lambda s: compute(s, op))
-        out_name = f"{OP_PREFIX[op]}_{target}"
+        result = keyed.groupby(keys)[target].agg(lambda s: compute(s, op))
+        out_name = target if OP_PREFIX[op] in target.lower() else f"{OP_PREFIX[op]}_{target}"
+        if op == "sum" and out_name == target:
+            out_name = f"sum_{target}"
     else:
-        result = keyed.groupby("_key").size()
+        result = keyed.groupby(keys).size()
         out_name = "count"
     result = pd.to_numeric(result, errors="coerce").dropna()
     if result.empty:
         raise PlanError(f"No values were available to calculate the {OP_LABEL[op]} by {group}.")
-    table = result.rename(out_name).rename_axis(group).reset_index()
+    table = result.rename(out_name).reset_index().rename(columns={"_key": group})
     is_date = grain is not None
     if is_date and plan.order is None:
-        order = WEEKDAYS if grain == "weekday" else None
-        table = table.sort_values(group, key=(lambda s: s.map(WEEKDAYS.index)) if order else None)
+        table = table.sort_values(group, key=(lambda s: s.map(WEEKDAYS.index)) if grain == "weekday" else None, kind="stable")
         descending = True
     else:
         descending = plan.order != "asc"
         table = table.sort_values(out_name, ascending=not descending, kind="stable")
     table[out_name] = table[out_name].round(2)
+    label_cols = [group] + ([group2] if group2 else [])
     limit = plan.limit
     shown = table.head(limit if limit and limit > 1 else 10 if limit == 1 else MAX_TABLE_ROWS)
     top = table.iloc[0]
-    noun = f"{OP_LABEL[op]} {target}" if target else "number of rows"
+    top_label = " / ".join(str(top[c]) for c in label_cols)
+    noun = metric_noun(op, target)
     scope = where_text(plan.conditions)
+    by_text = " and ".join(label_cols)
     if limit == 1:
         superlative = ("highest" if descending else "lowest") if target else ("most" if descending else "fewest")
-        answer = (f"{top[group]} has the {superlative} {noun} at {fmt_num(top[out_name])}{scope}."
-                  if target else f"{top[group]} has the {superlative} rows ({fmt_num(top[out_name])}){scope}.")
+        answer = (f"{top_label} has the {superlative} {noun} at {fmt_num(top[out_name])}{scope}."
+                  if target else f"{top_label} has the {superlative} rows ({fmt_num(top[out_name])}){scope}.")
     elif is_date:
         best = table.loc[table[out_name].idxmax()]
         answer = (f"Calculated the {noun} for {len(table)} {grain} periods{scope}. "
@@ -241,10 +255,12 @@ def run_groupby(df, plan, profile):
     else:
         by_value = table.sort_values(out_name, ascending=False, kind="stable")
         hi, lo = by_value.iloc[0], by_value.iloc[-1]
-        answer = (f"Calculated the {noun} for {len(table)} {group} groups{scope}. "
-                  f"Highest: {hi[group]} ({fmt_num(hi[out_name])}); lowest: {lo[group]} ({fmt_num(lo[out_name])}).")
+        hi_label = " / ".join(str(hi[c]) for c in label_cols)
+        lo_label = " / ".join(str(lo[c]) for c in label_cols)
+        answer = (f"Calculated the {noun} for {len(table)} {by_text} groups{scope}. "
+                  f"Highest: {hi_label} ({fmt_num(hi[out_name])}); lowest: {lo_label} ({fmt_num(lo[out_name])}).")
     grain_text = f" ({grain})" if grain else ""
-    explanation = (f"Grouped the dataset by {group}{grain_text}{scope} and calculated the {OP_LABEL[op]} "
+    explanation = (f"Grouped the dataset by {by_text}{grain_text}{scope} and calculated the {OP_LABEL[op]} "
                    f"of {target or 'row counts'}, sorted {'descending' if descending else 'ascending'}"
                    f"{' by value' if not (is_date and plan.order is None) else ' chronologically'}.")
     chart = None
@@ -252,8 +268,13 @@ def run_groupby(df, plan, profile):
     if 2 <= len(shown) <= MAX_CHART_GROUPS or (wants_chart and len(shown) >= 1):
         default = "line" if is_date else "bar"
         kind = pick_chart_type(plan, {"bar", "line", "pie", "area"}, default)
-        title = f"{noun.capitalize()} by {group}".replace("Number of rows", "Row count")
-        chart = make_chart(kind, title, group, out_name, shown.head(MAX_CHART_GROUPS))
+        title = f"{noun.capitalize()} by {by_text}".replace("Number of rows", "Row count")
+        data = shown.head(MAX_CHART_GROUPS)
+        x_axis = group
+        if group2:  # one bar per combination
+            data = data.assign(**{"group": data[group].astype(str) + " / " + data[group2].astype(str)})[["group", out_name]]
+            x_axis = "group"
+        chart = make_chart(kind, title, x_axis, out_name, data)
     return ExecResult(answer, explanation, table=df_to_table(shown), chart=chart)
 
 
@@ -303,8 +324,9 @@ def run_top_bottom(df, plan, profile):
     first = sub.iloc[0]
     lead = f"{first[label]} ({fmt_num(first[col])})" if label and label in sub.columns else fmt_num(first[col])
     scope = where_text(plan.conditions)
-    answer = (f"Here are the {'bottom' if bottom else 'top'} {len(sub)} rows by {col}{scope}. "
-              f"{'Lowest' if bottom else 'Highest'}: {lead}.")
+    which = "bottom" if bottom else "top"
+    answer = (f"The {'lowest' if bottom else 'highest'} {col}{scope} is {lead}." if len(sub) == 1 else
+              f"Here are the {which} {len(sub)} rows by {col}{scope}. {'Lowest' if bottom else 'Highest'}: {lead}.")
     explanation = f"Sorted the dataset by {col} in {'ascending' if bottom else 'descending'} order{scope} and kept the first {n} rows."
     return ExecResult(answer, explanation, table=df_to_table(sub), chart=_table_chart(plan, sub))
 

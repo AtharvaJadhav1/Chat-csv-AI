@@ -4,7 +4,7 @@
 
 Upload any CSV file and ask questions in plain English. ChatCSV AI turns each question into a **structured, validated analysis plan**, runs it with **allowlisted pandas operations**, and returns a grounded answer, table or chart. This is the solution for **PS 91 - Chat-with-your-CSV Tool**.
 
-![Python](https://img.shields.io/badge/Python-3.11-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688) ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![pandas](https://img.shields.io/badge/pandas-2.2-150458) ![Tests](https://img.shields.io/badge/tests-59%20passing-brightgreen)
+![Python](https://img.shields.io/badge/Python-3.11-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688) ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![pandas](https://img.shields.io/badge/pandas-2.2-150458) ![Tests](https://img.shields.io/badge/tests-69%20passing-brightgreen)
 
 ## Quick start
 
@@ -57,7 +57,7 @@ Keeping the LLM (`services/planner.py`, `llm_client.py`, `prompts.py`), security
 chatcsv-ai/
 ├── backend/
 │   ├── app/{main.py, config.py, api/, services/, models/, schemas/, utils/, security/}
-│   ├── tests/            # 59 pytest tests
+│   ├── tests/            # 69 pytest tests
 │   ├── requirements.txt, pytest.ini, Dockerfile
 ├── frontend/
 │   ├── app/              # pages: / /dataset /chat /insights /history /settings
@@ -133,7 +133,7 @@ If no API key is set, a deterministic **rule-based planner** produces the same `
 
 ### Supported analytics
 
-Row count, column count, column listing, mean, median, min, max, sum, count, std, unique values / distinct counts, value frequency, filtering (`==, !=, >, >=, <, <=, contains, in, not_in, is_null, not_null`), sorting, group-by + aggregation, top N, bottom N, missing-value analysis, Pearson correlation (pair or matrix), distribution (histogram), percentages, descriptive statistics, ranking/comparison (group-by with ordering), and date grouping (year/month/day/weekday) when a date column exists. Nothing outside this list is claimed.
+Row count, column count, column listing, mean, median, min, max, sum, count, std, unique values / distinct counts, value frequency, filtering (`==, !=, >, >=, <, <=, contains, in, not_in, is_null, not_null`), sorting, group-by + aggregation, top N, bottom N, missing-value analysis, Pearson correlation (pair or matrix), distribution (histogram), percentages, descriptive statistics, ranking/comparison (group-by with ordering), date grouping (year/month/day/weekday), date-range filters, and two-column grouping ("total amount by category and region"). Nothing outside this list is claimed.
 
 ## Security design
 
@@ -182,7 +182,7 @@ cd backend
 pytest -q
 ```
 
-59 tests cover upload, invalid/empty/malformed/binary CSVs, encodings, duplicate columns, profiling, row count, averages, group-by, filtering, sorting, top/bottom N, chart generation, unknown column, unsupported questions, empty results, missing values, malicious AI plans (code/SQL/URL injection), invalid AI JSON (+retry), LLM failure, hallucinated columns, type errors, large-file/row limits, date grouping, history and the streaming endpoint. LLM behaviour is tested with a scripted fake client, so tests need no API key or network.
+69 tests cover upload, invalid/empty/malformed/binary CSVs, encodings, duplicate columns, profiling, row count, averages, group-by, filtering, sorting, top/bottom N, chart generation, unknown column, unsupported questions, empty results, missing values, malicious AI plans (code/SQL/URL injection), invalid AI JSON (+retry), LLM failure, hallucinated columns, type errors, large-file/row limits, date grouping, history and the streaming endpoint. LLM behaviour is tested with a scripted fake client, so tests need no API key or network.
 
 ## Sample questions
 

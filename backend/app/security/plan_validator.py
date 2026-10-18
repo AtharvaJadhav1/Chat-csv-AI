@@ -194,7 +194,12 @@ def validate_plan(plan: AnalysisPlan, profile: DatasetProfile) -> AnalysisPlan:
             grain = grain or "month"
         else:
             grain = None
-        upd.update(group_by=group, target_column=target, operation=op, date_grain=grain)
+        group2 = r.resolve(plan.group_by_2, None)
+        if group2 == group:
+            group2 = None
+        if group2 and r.kinds[group2] == "datetime":
+            raise PlanError("A second grouping column can't be a date column; group by dates on their own.")
+        upd.update(group_by=group, group_by_2=group2, target_column=target, operation=op, date_grain=grain)
 
     elif intent in ("top_n", "bottom_n"):
         col = r.resolve(plan.column or plan.sort_by or plan.target_column, "numeric")

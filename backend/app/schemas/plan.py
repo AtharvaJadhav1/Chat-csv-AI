@@ -34,7 +34,7 @@ DateGrain = Literal["year", "month", "day", "weekday"]
 MAX_LIMIT = 1000
 
 PLAN_FIELDS = {
-    "intent", "operation", "column", "target_column", "group_by", "date_grain", "conditions",
+    "intent", "operation", "column", "target_column", "group_by", "group_by_2", "date_grain", "conditions",
     "columns", "sort_by", "order", "limit", "x_column", "y_column", "bins", "chart", "message",
     "explanation",
 }
@@ -71,6 +71,7 @@ class AnalysisPlan(BaseModel):
     column: Optional[str] = None
     target_column: Optional[str] = None
     group_by: Optional[str] = None
+    group_by_2: Optional[str] = None
     date_grain: Optional[DateGrain] = None
     conditions: list[Condition] = Field(default_factory=list, max_length=10)
     columns: list[str] = Field(default_factory=list, max_length=50)

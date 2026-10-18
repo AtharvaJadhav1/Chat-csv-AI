@@ -1,0 +1,251 @@
+order_id,order_date,region,category,product,quantity,unit_price,discount_pct,total_amount,payment_method,rating
+5104,2024-01-02,North,Grocery,Snacks,2,546,0,1092,Cash,3.6
+5137,2024-01-02,West,Grocery,Snacks,2,195,0,390,Debit Card,4.4
+5184,2024-01-03,South,Furniture,Chair,3,29523,15,88569,Debit Card,4.6
+5183,2024-01-07,West,Grocery,Snacks,4,238,0,952,Cash,3.7
+5161,2024-01-08,South,Furniture,Chair,1,36254,0,36254,Credit Card,4.9
+5110,2024-01-13,South,Sports,Cricket Bat,6,1870,10,11220,Debit Card,4.9
+5163,2024-01-14,West,Sports,Yoga Mat,6,904,0,5424,Cash,4.5
+5096,2024-01-15,West,Furniture,Bookshelf,5,19191,5,95955,UPI,2.6
+5002,2024-01-20,North,Electronics,Tablet,5,22070,10,110350,UPI,3.1
+5123,2024-01-20,South,Electronics,Laptop,2,24706,5,49412,Debit Card,4.2
+5211,2024-01-21,West,Furniture,Bookshelf,5,8739,15,43695,Debit Card,3.9
+5004,2024-01-24,South,Grocery,Snacks,1,1005,10,1005,Credit Card,3.9
+5166,2024-01-24,North,Electronics,Smartphone,6,12445,0,74670,UPI,4.7
+5057,2024-01-29,North,Clothing,T-Shirt,4,1837,10,7348,Cash,4.0
+5191,2024-01-29,East,Sports,Football,3,11245,10,33735,Debit Card,2.7
+5203,2024-01-30,West,Grocery,Snacks,4,2382,0,9528,Debit Card,3.1
+5108,2024-02-02,East,Electronics,Smartphone,3,20775,5,62325,Cash,4.9
+5078,2024-02-03,West,Clothing,Jeans,3,3549,15,10647,UPI,3.4
+5142,2024-02-03,East,Furniture,Bookshelf,6,17491,5,104946,Credit Card,3.3
+5021,2024-02-06,South,Clothing,T-Shirt,5,708,10,3540,Credit Card,4.1
+5124,2024-02-09,South,Furniture,Desk,5,23460,10,117300,Debit Card,2.7
+5164,2024-02-09,South,Grocery,Rice,5,2497,0,12485,UPI,2.8
+5140,2024-02-10,North,Clothing,T-Shirt,6,4690,10,28140,Credit Card,2.6
+5097,2024-02-11,East,Grocery,Rice,6,1820,10,10920,Cash,3.1
+5234,2024-02-11,South,Clothing,Jeans,6,4296,15,25776,UPI,3.4
+5016,2024-02-12,South,Grocery,Rice,2,718,0,1436,Credit Card,2.5
+5218,2024-02-12,West,Grocery,Rice,5,517,0,2585,UPI,3.6
+5198,2024-02-13,East,Clothing,Jacket,4,967,15,3868,Cash,4.1
+5031,2024-02-14,West,Grocery,Snacks,6,1461,10,8766,UPI,4.3
+5061,2024-02-15,South,Electronics,Tablet,1,25312,15,25312,UPI,3.5
+5128,2024-02-16,West,Furniture,Bookshelf,4,10440,5,41760,Debit Card,4.4
+5235,2024-02-18,North,Sports,Cricket Bat,5,1137,15,5685,Debit Card,4.0
+5171,2024-02-20,East,Electronics,Tablet,4,41988,0,167952,Credit Card,4.3
+5214,2024-02-21,South,Grocery,Rice,6,812,10,4872,UPI,4.8
+5023,2024-02-22,East,Clothing,T-Shirt,1,1680,5,1680,Debit Card,4.6
+5181,2024-02-22,South,Clothing,T-Shirt,2,2619,0,5238,Credit Card,3.5
+5159,2024-02-23,East,Grocery,Rice,2,1025,0,2050,UPI,3.3
+5122,2024-02-24,East,Clothing,Jacket,6,551,0,3306,Cash,3.4
+5212,2024-02-25,North,Electronics,Laptop,4,27687,0,110748,Debit Card,4.0
+5047,2024-02-27,South,Clothing,Jacket,5,1026,0,5130,Cash,3.2
+5249,2024-02-28,South,Clothing,T-Shirt,4,4452,0,17808,Credit Card,3.9
+5219,2024-03-03,North,Electronics,Headphones,6,51867,0,311202,Credit Card,3.7
+5179,2024-03-05,East,Clothing,Jeans,5,2392,0,11960,Credit Card,3.2
+5195,2024-03-05,West,Clothing,Jeans,5,5821,0,29105,Cash,4.3
+5070,2024-03-09,North,Clothing,Jeans,5,5151,0,25755,Debit Card,3.2
+5056,2024-03-12,West,Clothing,Jeans,2,5709,0,11418,Credit Card,2.5
+5076,2024-03-13,West,Grocery,Snacks,4,1336,10,5344,Cash,2.8
+5165,2024-03-13,North,Sports,Cricket Bat,2,6450,0,12900,Credit Card,4.2
+5228,2024-03-13,South,Sports,Football,1,5527,15,5527,Debit Card,3.4
+5143,2024-03-14,East,Sports,Yoga Mat,3,8277,10,24831,Credit Card,4.0
+5037,2024-03-17,South,Furniture,Desk,5,3257,10,16285,UPI,3.9
+5233,2024-03-17,South,Clothing,Jacket,4,4737,10,18948,Cash,4.7
+5032,2024-03-18,West,Furniture,Bookshelf,2,4805,0,9610,Debit Card,4.1
+5152,2024-03-22,South,Furniture,Desk,3,34123,0,102369,Credit Card,3.6
+5174,2024-03-22,East,Sports,Cricket Bat,3,10270,0,30810,Debit Card,2.9
+5204,2024-03-23,East,Furniture,Chair,5,3432,15,17160,Debit Card,4.2
+5130,2024-03-28,South,Clothing,Jeans,6,4632,5,27792,Credit Card,3.8
+5172,2024-03-28,West,Electronics,Laptop,5,26816,15,134080,Credit Card,3.2
+5052,2024-04-02,South,Furniture,Chair,3,6301,5,18903,Credit Card,3.2
+5185,2024-04-02,North,Sports,Football,2,11934,10,23868,Cash,3.1
+5237,2024-04-02,West,Electronics,Laptop,3,21172,0,63516,UPI,2.6
+5058,2024-04-04,South,Clothing,Jeans,1,4263,10,4263,UPI,3.2
+5232,2024-04-08,North,Furniture,Desk,2,16939,5,33878,Cash,3.9
+5244,2024-04-09,North,Electronics,Headphones,4,55004,0,220016,UPI,4.8
+5029,2024-04-10,East,Electronics,Headphones,2,38807,10,77614,UPI,3.7
+5127,2024-04-10,West,Electronics,Tablet,3,50236,0,150708,UPI,3.6
+5113,2024-04-11,West,Sports,Cricket Bat,1,9186,0,9186,Debit Card,2.7
+5027,2024-04-12,West,Grocery,Snacks,6,1028,0,6168,UPI,4.5
+5072,2024-04-12,East,Grocery,Rice,1,2349,10,2349,UPI,3.2
+5250,2024-04-13,East,Clothing,Jeans,1,2611,5,2611,Credit Card,4.8
+5081,2024-04-14,North,Grocery,Rice,5,2349,10,11745,Debit Card,4.0
+5189,2024-04-14,West,Sports,Yoga Mat,4,9664,0,38656,Cash,3.8
+5024,2024-04-15,East,Furniture,Desk,5,4513,15,22565,UPI,4.4
+5167,2024-04-15,South,Grocery,Rice,1,1109,0,1109,UPI,4.9
+5105,2024-04-16,West,Electronics,Smartphone,5,57729,5,288645,Debit Card,2.7
+5115,2024-04-16,North,Clothing,Jeans,5,1188,10,5940,Debit Card,2.9
+5190,2024-04-17,South,Grocery,Snacks,6,1971,15,11826,UPI,4.3
+5199,2024-04-17,North,Electronics,Smartphone,6,8752,5,52512,UPI,3.9
+5034,2024-04-18,North,Furniture,Chair,4,15766,0,63064,Cash,3.8
+5240,2024-04-23,South,Furniture,Desk,3,18409,5,55227,Cash,2.6
+5068,2024-04-28,West,Clothing,Jeans,2,2181,10,4362,UPI,3.7
+5120,2024-04-28,West,Electronics,Smartphone,1,39114,0,39114,Cash,3.1
+5062,2024-04-29,North,Clothing,T-Shirt,3,5658,15,16974,Credit Card,4.1
+5118,2024-04-30,South,Furniture,Chair,2,19078,15,38156,Credit Card,3.3
+5220,2024-05-04,West,Clothing,T-Shirt,6,5161,0,30966,UPI,3.4
+5059,2024-05-05,North,Clothing,Jeans,5,3150,0,15750,Cash,3.0
+5107,2024-05-06,West,Grocery,Rice,1,1782,10,1782,UPI,3.7
+5180,2024-05-06,East,Sports,Yoga Mat,2,3355,15,6710,Cash,2.9
+5091,2024-05-07,North,Sports,Cricket Bat,4,8155,0,32620,Credit Card,3.8
+5188,2024-05-08,South,Grocery,Rice,1,256,0,256,Cash,2.8
+5083,2024-05-10,East,Clothing,Jeans,3,2939,0,8817,Cash,3.7
+5230,2024-05-10,North,Grocery,Snacks,4,946,10,3784,UPI,3.8
+5241,2024-05-12,West,Sports,Cricket Bat,1,1570,0,1570,Credit Card,3.3
+5074,2024-05-14,East,Furniture,Desk,6,37345,15,224070,Cash,4.7
+5160,2024-05-16,West,Clothing,T-Shirt,6,930,15,5580,Cash,3.2
+5051,2024-05-17,South,Clothing,Jacket,5,3922,15,19610,Credit Card,4.8
+5073,2024-05-17,West,Electronics,Headphones,5,37455,0,187275,UPI,4.0
+5011,2024-05-18,West,Grocery,Oil,1,483,0,483,UPI,4.3
+5053,2024-05-18,East,Sports,Cricket Bat,6,3714,5,22284,UPI,2.5
+5248,2024-05-18,East,Furniture,Chair,2,4665,0,9330,Cash,3.7
+5079,2024-05-23,North,Grocery,Rice,3,297,5,891,Credit Card,3.1
+5017,2024-05-24,North,Sports,Cricket Bat,2,5104,10,10208,Cash,4.0
+5208,2024-05-25,West,Sports,Football,5,4252,10,21260,Cash,3.9
+5227,2024-05-25,North,Sports,Football,2,8193,5,16386,Cash,3.6
+5168,2024-05-27,West,Electronics,Laptop,6,49435,0,296610,UPI,4.5
+5149,2024-05-28,West,Electronics,Tablet,2,17788,15,35576,Cash,4.7
+5221,2024-05-30,West,Furniture,Chair,6,8524,5,51144,UPI,4.3
+5148,2024-05-31,East,Furniture,Chair,5,6164,15,30820,Cash,4.3
+5242,2024-06-01,West,Electronics,Laptop,2,52360,10,104720,Cash,3.4
+5094,2024-06-02,South,Electronics,Tablet,1,12610,5,12610,Credit Card,4.5
+5095,2024-06-03,West,Electronics,Smartphone,1,43224,5,43224,Credit Card,3.7
+5136,2024-06-06,South,Clothing,Jeans,6,3941,10,23646,Cash,3.6
+5215,2024-06-07,East,Electronics,Smartphone,3,17089,0,51267,Debit Card,2.6
+5226,2024-06-07,West,Electronics,Headphones,2,47396,10,94792,Debit Card,4.2
+5010,2024-06-09,East,Electronics,Smartphone,5,45553,15,227765,Debit Card,3.9
+5042,2024-06-10,North,Electronics,Headphones,4,36974,10,147896,UPI,3.0
+5080,2024-06-10,South,Clothing,Jeans,4,4685,10,18740,UPI,4.5
+5223,2024-06-10,East,Furniture,Bookshelf,4,6917,10,27668,Debit Card,4.2
+5086,2024-06-12,South,Clothing,Jeans,5,1246,5,6230,Credit Card,4.7
+5144,2024-06-12,East,Sports,Cricket Bat,5,4689,0,23445,Credit Card,3.5
+5170,2024-06-13,West,Clothing,Jeans,1,3514,15,3514,UPI,4.5
+5162,2024-06-17,South,Clothing,Jeans,2,3684,15,7368,Debit Card,3.7
+5206,2024-06-18,North,Electronics,Tablet,6,56269,10,337614,Credit Card,2.6
+5225,2024-06-19,East,Grocery,Snacks,3,2421,0,7263,Cash,4.7
+5169,2024-06-21,West,Furniture,Chair,3,23915,0,71745,Cash,3.1
+5077,2024-06-22,West,Clothing,Jacket,1,3158,0,3158,UPI,4.8
+5207,2024-06-22,North,Grocery,Oil,6,619,5,3714,Cash,3.7
+5020,2024-06-23,North,Grocery,Rice,2,550,0,1100,Credit Card,3.8
+5200,2024-06-26,South,Furniture,Desk,2,32619,10,65238,Credit Card,4.0
+5151,2024-07-01,South,Clothing,Jeans,1,4785,15,4785,Cash,4.0
+5134,2024-07-02,North,Sports,Cricket Bat,2,7084,0,14168,Credit Card,2.6
+5088,2024-07-03,South,Grocery,Oil,3,2452,15,7356,Credit Card,2.7
+5147,2024-07-07,South,Clothing,Jeans,3,3578,5,10734,UPI,3.6
+5145,2024-07-11,South,Clothing,Jeans,6,3185,0,19110,UPI,4.1
+5177,2024-07-13,South,Sports,Football,5,3603,0,18015,UPI,3.4
+5193,2024-07-19,West,Grocery,Rice,5,996,0,4980,Credit Card,4.8
+5101,2024-07-20,North,Electronics,Headphones,5,17593,0,87965,Credit Card,3.5
+5014,2024-07-22,West,Furniture,Chair,6,19227,0,115362,Credit Card,3.6
+5044,2024-07-22,West,Furniture,Desk,6,9168,0,55008,Credit Card,4.3
+5231,2024-07-22,East,Clothing,T-Shirt,1,2407,5,2407,Debit Card,3.8
+5138,2024-07-23,North,Grocery,Rice,2,2038,0,4076,Cash,3.6
+5186,2024-07-23,South,Electronics,Smartphone,4,23885,10,95540,Debit Card,3.6
+5157,2024-07-31,South,Sports,Yoga Mat,6,11311,5,67866,UPI,3.3
+5126,2024-08-01,North,Grocery,Snacks,3,1359,15,4077,Cash,3.5
+5009,2024-08-02,South,Electronics,Smartphone,1,41550,0,41550,Debit Card,3.6
+5205,2024-08-02,North,Grocery,Rice,3,1844,5,5532,UPI,2.6
+5045,2024-08-03,South,Sports,Football,4,6356,5,25424,UPI,4.3
+5098,2024-08-03,East,Electronics,Tablet,6,30154,0,180924,UPI,4.5
+5048,2024-08-04,East,Furniture,Chair,3,11490,0,34470,Debit Card,4.3
+5176,2024-08-04,North,Grocery,Snacks,6,452,0,2712,Cash,3.2
+5085,2024-08-06,South,Grocery,Oil,3,1943,0,5829,Credit Card,2.7
+5236,2024-08-06,North,Furniture,Chair,3,21338,15,64014,Credit Card,3.1
+5015,2024-08-08,East,Sports,Yoga Mat,3,3043,10,9129,Cash,4.2
+5182,2024-08-10,East,Furniture,Desk,3,22490,0,67470,UPI,3.2
+5217,2024-08-16,North,Grocery,Rice,5,1757,10,8785,Credit Card,3.7
+5245,2024-08-16,North,Clothing,Jeans,6,1644,0,9864,UPI,3.6
+5102,2024-08-18,East,Electronics,Laptop,2,33776,0,67552,Credit Card,3.3
+5178,2024-08-18,East,Clothing,Jacket,5,1772,10,8860,Debit Card,4.2
+5066,2024-08-19,North,Clothing,T-Shirt,1,3585,0,3585,Credit Card,3.7
+5247,2024-08-19,South,Electronics,Tablet,2,54774,0,109548,Cash,3.5
+5046,2024-08-22,West,Electronics,Laptop,3,44310,10,132930,Cash,3.8
+5103,2024-08-27,North,Furniture,Chair,6,37393,10,224358,Cash,5.0
+5194,2024-08-28,South,Electronics,Headphones,6,20659,5,123954,Debit Card,3.7
+5022,2024-08-30,North,Clothing,Jacket,5,3483,10,17415,Debit Card,3.7
+5060,2024-08-31,East,Clothing,T-Shirt,4,1187,0,4748,Credit Card,3.8
+5158,2024-09-01,North,Electronics,Tablet,6,59312,10,355872,Debit Card,2.7
+5246,2024-09-01,North,Clothing,T-Shirt,3,2415,5,7245,Credit Card,3.3
+5196,2024-09-03,North,Clothing,T-Shirt,4,2022,5,8088,Cash,3.1
+5243,2024-09-03,West,Grocery,Rice,1,1635,10,1635,Credit Card,4.5
+5075,2024-09-05,West,Clothing,Jacket,2,4578,0,9156,UPI,4.9
+5082,2024-09-05,North,Furniture,Bookshelf,6,21756,0,130536,Credit Card,3.7
+5197,2024-09-05,West,Clothing,T-Shirt,3,4428,0,13284,Cash,2.9
+5229,2024-09-05,West,Electronics,Headphones,5,44285,0,221425,Cash,4.0
+5238,2024-09-06,North,Clothing,T-Shirt,6,4254,10,25524,UPI,4.3
+5131,2024-09-08,South,Electronics,Smartphone,1,33148,0,33148,UPI,4.9
+5173,2024-09-08,North,Electronics,Tablet,1,30793,0,30793,Debit Card,4.0
+5111,2024-09-09,South,Grocery,Snacks,3,1861,0,5583,UPI,4.5
+5209,2024-09-09,West,Clothing,Jeans,3,3409,15,10227,Cash,4.7
+5210,2024-09-09,North,Clothing,Jeans,2,5862,0,11724,Cash,4.3
+5063,2024-09-10,South,Sports,Football,4,6143,15,24572,Credit Card,2.6
+5099,2024-09-10,South,Sports,Football,1,4162,0,4162,Credit Card,3.7
+5036,2024-09-13,South,Sports,Yoga Mat,5,7691,0,38455,UPI,4.7
+5026,2024-09-14,East,Furniture,Bookshelf,5,38492,0,192460,Credit Card,4.5
+5067,2024-09-14,North,Electronics,Laptop,4,12594,10,50376,Cash,4.5
+5039,2024-09-16,West,Clothing,T-Shirt,1,1300,0,1300,UPI,3.6
+5119,2024-09-16,South,Grocery,Oil,3,1107,0,3321,Debit Card,5.0
+5139,2024-09-18,North,Electronics,Laptop,4,41052,0,164208,UPI,4.8
+5040,2024-09-19,South,Sports,Yoga Mat,5,10730,5,53650,Debit Card,3.8
+5054,2024-09-20,West,Sports,Cricket Bat,5,3904,10,19520,UPI,4.1
+5146,2024-09-23,North,Clothing,Jeans,4,5048,15,20192,Debit Card,4.3
+5008,2024-09-25,West,Furniture,Chair,1,22677,10,22677,Cash,4.0
+5087,2024-09-25,South,Grocery,Snacks,4,1795,5,7180,Cash,4.4
+5038,2024-09-28,West,Clothing,Jacket,6,4746,15,28476,UPI,3.1
+5155,2024-09-29,North,Electronics,Tablet,1,12032,0,12032,Credit Card,2.9
+5106,2024-10-04,West,Grocery,Rice,2,1626,5,3252,Cash,4.3
+5035,2024-10-05,West,Sports,Cricket Bat,3,5049,0,15147,Cash,4.7
+5114,2024-10-05,East,Electronics,Headphones,4,44214,10,176856,UPI,5.0
+5055,2024-10-06,West,Grocery,Oil,6,2127,5,12762,Credit Card,5.0
+5033,2024-10-07,South,Clothing,Jacket,2,4994,0,9988,UPI,3.8
+5201,2024-10-07,East,Sports,Cricket Bat,1,11752,10,11752,Credit Card,3.8
+5125,2024-10-08,South,Electronics,Laptop,4,51517,0,206068,Debit Card,4.2
+5129,2024-10-09,South,Furniture,Bookshelf,1,6387,10,6387,UPI,3.9
+5156,2024-10-09,South,Electronics,Headphones,1,48149,10,48149,Credit Card,3.8
+5202,2024-10-11,North,Grocery,Snacks,6,579,10,3474,Credit Card,
+5006,2024-10-15,North,Sports,Yoga Mat,6,1828,0,10968,Debit Card,4.2
+5003,2024-10-16,North,Sports,Cricket Bat,4,1768,15,7072,UPI,3.9
+5239,2024-10-16,South,Electronics,Laptop,3,28887,15,86661,Debit Card,3.0
+5117,2024-10-17,East,Clothing,Jeans,3,2788,5,8364,Cash,3.0
+5121,2024-10-25,South,Electronics,Laptop,2,47353,5,94706,Credit Card,3.6
+5007,2024-10-26,West,Grocery,Snacks,3,2007,5,6021,Credit Card,4.5
+5090,2024-10-27,West,Grocery,Rice,6,2038,0,12228,Debit Card,4.8
+5112,2024-11-06,South,Clothing,Jeans,6,1739,5,10434,Debit Card,3.4
+5050,2024-11-07,South,Electronics,Laptop,3,13488,5,40464,UPI,3.6
+5132,2024-11-07,West,Grocery,Rice,3,318,15,954,Credit Card,4.1
+5013,2024-11-08,North,Grocery,Snacks,3,788,0,2364,Credit Card,
+5150,2024-11-09,North,Furniture,Desk,4,17893,0,71572,UPI,3.9
+5213,2024-11-09,West,Electronics,Headphones,5,43628,15,218140,UPI,3.0
+5133,2024-11-10,South,Furniture,Chair,5,29508,0,147540,Credit Card,2.6
+5018,2024-11-12,North,Clothing,Jeans,2,4722,15,9444,Debit Card,3.5
+5116,2024-11-13,South,Furniture,Bookshelf,4,33207,15,132828,UPI,4.4
+5100,2024-11-15,West,Clothing,T-Shirt,3,1392,0,4176,Credit Card,3.7
+5192,2024-11-17,East,Electronics,Smartphone,4,35560,0,142240,Credit Card,3.3
+5069,2024-11-19,South,Clothing,Jacket,1,5554,15,5554,Credit Card,3.3
+5019,2024-11-20,West,Grocery,Rice,1,2072,0,2072,UPI,5.0
+5216,2024-11-24,North,Electronics,Tablet,4,45115,15,180460,UPI,4.6
+5043,2024-11-25,East,Clothing,Jacket,1,1765,5,1765,Credit Card,4.9
+5084,2024-11-25,South,Grocery,Rice,1,785,0,785,Debit Card,3.9
+5089,2024-11-26,West,Furniture,Chair,4,29198,5,116792,UPI,
+5093,2024-11-26,East,Furniture,Desk,2,5463,5,10926,Debit Card,4.2
+5154,2024-11-26,West,Sports,Yoga Mat,3,10543,15,31629,Debit Card,3.1
+5224,2024-11-26,South,Furniture,Bookshelf,1,26806,10,26806,Debit Card,3.5
+5092,2024-11-27,West,Electronics,Laptop,6,53940,15,323640,UPI,2.5
+5001,2024-11-29,North,Clothing,Jacket,2,3734,15,7468,UPI,3.4
+5222,2024-11-29,North,Electronics,Tablet,1,8965,5,8965,Cash,4.3
+5030,2024-12-04,North,Clothing,Jeans,6,1194,0,7164,Debit Card,4.7
+5153,2024-12-06,East,Electronics,Tablet,6,17482,5,104892,UPI,2.6
+5135,2024-12-07,East,Sports,Cricket Bat,6,1424,10,8544,Debit Card,3.9
+5071,2024-12-11,West,Electronics,Smartphone,6,22266,15,133596,Cash,3.7
+5187,2024-12-11,South,Sports,Yoga Mat,4,9291,5,37164,UPI,3.5
+5012,2024-12-14,West,Clothing,Jeans,6,5234,10,31404,Cash,2.6
+5005,2024-12-15,South,Sports,Cricket Bat,3,9979,15,29937,Credit Card,3.4
+5049,2024-12-18,South,Electronics,Tablet,3,11770,0,35310,Cash,4.8
+5109,2024-12-19,East,Sports,Football,1,5095,5,5095,UPI,4.3
+5028,2024-12-20,East,Grocery,Snacks,3,893,5,2679,Cash,2.7
+5065,2024-12-20,South,Sports,Cricket Bat,6,11988,0,71928,UPI,2.8
+5141,2024-12-20,North,Electronics,Headphones,5,55977,0,279885,Debit Card,
+5025,2024-12-22,East,Clothing,T-Shirt,6,1245,5,7470,Credit Card,3.4
+5175,2024-12-22,North,Electronics,Smartphone,4,59636,5,238544,UPI,3.5
+5041,2024-12-23,East,Grocery,Oil,5,1114,0,5570,Debit Card,2.8
+5064,2024-12-24,South,Sports,Yoga Mat,6,7832,15,46992,UPI,4.6

@@ -21,6 +21,7 @@ PLAN FORMAT (all keys optional except "intent"):
   "operation": "mean" | "median" | "min" | "max" | "sum" | "count" | "nunique" | "std",
   "column": string,            // main column (aggregation, top_n, bottom_n, unique_values, value_counts, distribution, describe)
   "group_by": string,          // groupby_aggregation: the category (or date) column
+  "group_by_2": string,        // optional second category column ("sales by region and category")
   "target_column": string,     // groupby_aggregation: the numeric column to aggregate (omit to count rows)
   "date_grain": "year" | "month" | "day" | "weekday",   // only when group_by is a datetime column
   "conditions": [ {"column": string, "operator": "==" | "!=" | ">" | ">=" | "<" | "<=" | "contains" | "in" | "not_in" | "is_null" | "not_null", "value": scalar or list} ],
@@ -43,6 +44,10 @@ INTENT GUIDE
 - "distribution / histogram of X": distribution with column X.
 - "how often / frequency of values in X": value_counts. "distinct values of X": unique_values.
 - "missing / null values": missing_values.
+- "who/which row has the highest X": top_n with column X and limit 1 (bottom_n for lowest).
+- Date ranges: filter conditions on the datetime column with ISO dates (e.g. {"column":"order_date","operator":">=","value":"2024-03-01"}). "by month/year": groupby_aggregation with group_by the date column and date_grain.
+- "by A and B": groupby_aggregation with group_by A and group_by_2 B.
+- If the user says "revenue", "sales" or another synonym, map it to the closest numeric column in the schema; never invent a column. If nothing fits, use the user's word as the column so the app can list the real columns.
 - Set chart.required true only when the user asks for a chart/plot/graph/visual.
 - Percent signs: "75%" means value 75 when the column is on a 0-100 scale (check min/max in the schema).
 - Use categorical values exactly as listed in the schema's top_values when filtering.
