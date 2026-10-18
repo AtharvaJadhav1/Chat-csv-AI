@@ -4,6 +4,18 @@
 
 Upload any CSV file and ask questions in plain English. ChatCSV AI turns each question into a **structured, validated analysis plan**, runs it with **allowlisted pandas operations**, and returns a grounded answer, table or chart. This is the solution for **PS 91 - Chat-with-your-CSV Tool**.
 
+![Python](https://img.shields.io/badge/Python-3.11-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688) ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![pandas](https://img.shields.io/badge/pandas-2.2-150458) ![Tests](https://img.shields.io/badge/tests-59%20passing-brightgreen)
+
+## Quick start
+
+```bash
+git clone https://github.com/AtharvaJadhav1/Chat-csv-AI.git
+cd Chat-csv-AI
+docker compose up --build
+```
+
+Open <http://localhost:3000>, click **Try sample students.csv**, and start asking questions. No API key is needed; add `OPENAI_API_KEY` to a `.env` file for free-form LLM understanding.
+
 ## Features
 
 - Drag-and-drop CSV upload with progress, size/row limits, encoding and delimiter detection, malformed/empty/duplicate-column handling
@@ -201,7 +213,7 @@ Using `sample_data/students.csv` (click **Try sample students.csv** in the UI):
 - The rule-based fallback understands common phrasings, not arbitrary language; configure an LLM key for free-form questions.
 - Pearson correlation only; no forecasting or statistical tests.
 - Files up to 25 MB / 100k rows by default (configurable); everything is loaded into memory.
-- Docker images were not built in the authoring environment (Docker daemon unavailable); the local run path was tested end to end.
+- Free ports 3000 and 8000 before `docker compose up`; if you run the dev server on another port, add it to `CORS_ORIGINS`.
 
 ## Future improvements
 
