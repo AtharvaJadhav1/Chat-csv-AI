@@ -110,3 +110,14 @@ def test_stream_endpoint_emits_real_stages_then_result(client, students):
     events = [json.loads(line) for line in resp.text.strip().splitlines()]
     assert [e["stage"] for e in events if "stage" in e] == ["analyzing", "understanding", "running", "preparing"]
     assert events[-1]["result"]["status"] == "ok"
+
+
+def test_llm_outage_falls_back_to_rule_planner(client, students):
+    from app.api.deps import get_planner
+    from app.main import app
+    from app.services.planner import FallbackPlanner, LLMPlanner, RuleBasedPlanner
+    from .conftest import FakeLLM
+    bad = FakeLLM(LLMError("The AI service rejected the API key. Check OPENAI_API_KEY."))
+    app.dependency_overrides[get_planner] = lambda: FallbackPlanner(LLMPlanner(bad), RuleBasedPlanner())
+    res = chat(client, students, "What is the average marks?")
+    assert res["status"] == "ok" and res["planner"] == "rules-fallback"

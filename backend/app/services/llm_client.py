@@ -43,8 +43,17 @@ class OpenAICompatibleClient:
         if resp.status_code == 429:
             raise LLMError("The AI service is rate limiting requests. Please wait a moment and retry.")
         if resp.status_code >= 400:
-            raise LLMError(f"The AI service returned an error (HTTP {resp.status_code}).")
+            raise LLMError(f"The AI service returned an error (HTTP {resp.status_code}): {self._provider_message(resp)}")
         try:
             return resp.json()["choices"][0]["message"]["content"] or ""
         except (KeyError, IndexError, ValueError):
             raise LLMError("The AI service returned an unexpected response format.")
+
+    @staticmethod
+    def _provider_message(resp: httpx.Response) -> str:
+        """The provider's own error text (never contains our key); helps diagnose bad model names or access."""
+        try:
+            message = resp.json()["error"]["message"]
+        except (KeyError, TypeError, ValueError):
+            message = resp.text
+        return " ".join(str(message).split())[:250] or "no details"

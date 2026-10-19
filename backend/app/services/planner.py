@@ -1,6 +1,8 @@
 """Planners turn a natural-language question into a structured AnalysisPlan (never code)."""
 import json
+import logging
 import re
+import threading
 from typing import Any, Protocol
 
 from pydantic import ValidationError
@@ -76,10 +78,32 @@ class RuleBasedPlanner:
         return plan_question(question, record)
 
 
+class FallbackPlanner:
+    """Uses the LLM, but degrades to the rule-based planner if the LLM service fails (bad key, timeout, outage)."""
+
+    def __init__(self, primary: Planner, fallback: Planner):
+        self.primary, self.fallback = primary, fallback
+        self._local = threading.local()
+
+    @property
+    def name(self) -> str:
+        return getattr(self._local, "name", self.primary.name)
+
+    def plan(self, question: str, record: DatasetRecord) -> AnalysisPlan:
+        try:
+            plan = self.primary.plan(question, record)
+            self._local.name = self.primary.name
+            return plan
+        except LLMError as exc:
+            logging.getLogger("chatcsv.planner").warning("LLM unavailable, using rule-based planner: %s", exc)
+            self._local.name = "rules-fallback"
+            return self.fallback.plan(question, record)
+
+
 def build_planner(settings: Settings) -> Planner:
     if settings.llm_enabled:
-        return LLMPlanner(OpenAICompatibleClient(settings))
+        return FallbackPlanner(LLMPlanner(OpenAICompatibleClient(settings)), RuleBasedPlanner())
     return RuleBasedPlanner()
 
 
-__all__ = ["Planner", "LLMPlanner", "RuleBasedPlanner", "PlanParseError", "LLMError", "build_planner", "parse_plan"]
+__all__ = ["Planner", "FallbackPlanner", "LLMPlanner", "RuleBasedPlanner", "PlanParseError", "LLMError", "build_planner", "parse_plan"]

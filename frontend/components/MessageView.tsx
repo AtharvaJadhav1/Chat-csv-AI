@@ -90,7 +90,7 @@ export default function MessageView({ message }: { message: ChatMessage }) {
                     <div className="space-y-2 border-t border-border px-3 py-2.5">
                       <p className="text-muted">{res.analysis.explanation}</p>
                       <pre className="scroll-thin overflow-x-auto rounded-md bg-surface p-2.5 text-xs">{JSON.stringify(res.analysis.plan, null, 2)}</pre>
-                      <p className="text-xs text-muted">Planned by: {res.planner === "llm" ? "LLM" : "rule-based planner"} · executed with allowlisted pandas operations</p>
+                      <p className="text-xs text-muted">Planned by: {res.planner === "llm" ? "LLM" : res.planner === "rules-fallback" ? "rule-based planner (LLM unavailable, check the API key)" : "rule-based planner"} · executed with allowlisted pandas operations</p>
                     </div>
                   )}
                 </div>
