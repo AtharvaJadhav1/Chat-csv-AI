@@ -6,7 +6,7 @@ from ..models.dataset import DatasetRecord, DatasetStore
 from ..schemas.api import AnalysisInfo, ChatResponse, HistoryItem
 from ..schemas.plan import AnalysisPlan
 from ..security.plan_guard import PlanSecurityError, guard_question
-from ..security.plan_validator import PlanError, validate_plan
+from ..security.plan_validator import PlanError, validate_plan_with_notes
 from .executor import execute_plan
 from .llm_client import LLMError
 from .planner import PlanParseError, Planner
@@ -38,17 +38,18 @@ def answer_stream(
         yield "stage", "understanding"
         raw_plan = planner.plan(question, record)
         yield "stage", "running"
-        plan = validate_plan(raw_plan, record.profile)
+        plan, notes = validate_plan_with_notes(raw_plan, record.profile)
         executed = execute_plan(record.df, plan, record.profile)
         yield "stage", "preparing"
         result = validate_result(executed)
         response = ChatResponse(
             status="ok", answer=result.answer, analysis=_analysis_info(plan, result.explanation),
             stat=result.stat, table=result.table, chart=result.chart, planner=planner.name,
+            safety="validated", notes=notes,
         )
     except PlanSecurityError as exc:
         logger.warning("blocked unsafe input for dataset %s", record.id)
-        response = ChatResponse(status="error", answer=str(exc), planner=planner.name)
+        response = ChatResponse(status="error", answer=str(exc), planner=planner.name, safety="blocked")
     except LLMError as exc:
         logger.warning("LLM failure: %s", exc)
         response = ChatResponse(status="error", answer=str(exc), planner=planner.name)

@@ -3,12 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --bg: 248 250 252;
+  --bg: 250 250 249;
   --surface: 255 255 255;
-  --subtle: 241 245 249;
-  --border: 226 232 240;
-  --fg: 15 23 42;
-  --muted: 100 116 139;
+  --subtle: 245 245 243;
+  --border: 235 235 231;
+  --fg: 24 24 27;
+  --muted: 113 113 122;
   --brand: 79 70 229;
   --brand-fg: 255 255 255;
   --danger: 220 38 38;
@@ -17,12 +17,12 @@
 }
 
 .dark {
-  --bg: 11 15 25;
-  --surface: 17 24 39;
-  --subtle: 30 41 59;
-  --border: 51 65 85;
-  --fg: 241 245 249;
-  --muted: 148 163 184;
+  --bg: 10 10 12;
+  --surface: 19 19 23;
+  --subtle: 28 28 34;
+  --border: 40 40 48;
+  --fg: 244 244 245;
+  --muted: 161 161 170;
   --brand: 129 140 248;
   --brand-fg: 15 23 42;
   --danger: 248 113 113;
@@ -32,15 +32,23 @@
 
 html,
 body {
-  background: rgb(var(--bg));
+  background-color: rgb(var(--bg));
   color: rgb(var(--fg));
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
+/* Minimal backdrop: flat neutral with one faint glow of the dataset's accent colour at the top. */
+body {
+  background-image: radial-gradient(900px 380px at 50% -80px, rgb(var(--brand) / 0.08), transparent 70%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  transition: background-color 0.3s ease;
+}
+
 @layer components {
   .card {
-    @apply rounded-xl border border-border bg-surface shadow-card;
+    @apply rounded-2xl border border-border bg-surface;
   }
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition

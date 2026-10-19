@@ -18,7 +18,7 @@ const config: Config = {
         warn: "rgb(var(--warn) / <alpha-value>)",
         ok: "rgb(var(--ok) / <alpha-value>)",
       },
-      boxShadow: { card: "0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06)" },
+      boxShadow: { card: "0 1px 2px rgb(0 0 0 / 0.03)" },
     },
   },
   plugins: [],

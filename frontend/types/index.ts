@@ -81,6 +81,8 @@ export interface ChatResponse {
   stat: { label: string; value: string } | null;
   table: TableData | null;
   chart: ChartSpec | null;
+  safety: "validated" | "blocked" | "none";
+  notes: string[];
   planner: string;
   timestamp: string;
 }

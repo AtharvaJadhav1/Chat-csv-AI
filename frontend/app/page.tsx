@@ -11,7 +11,7 @@ import DataPreview from "@/components/DataPreview";
 export default function DashboardPage() {
   const { dataset, insights } = useApp();
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader title="Analyze your CSV with AI" subtitle="Talk to your data. Get answers instantly." />
       {!dataset ? (
         <UploadZone />

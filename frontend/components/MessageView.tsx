@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Bot, Check, ChevronDown, Copy, HelpCircle, RotateCcw, ShieldAlert, User } from "lucide-react";
+import { AlertTriangle, Bot, Check, ChevronDown, Copy, HelpCircle, Info, RotateCcw, ShieldAlert, ShieldCheck, User } from "lucide-react";
 import { useApp } from "@/lib/AppContext";
 import type { ChatMessage, Stage } from "@/types";
 import ChartView from "@/components/ChartView";
@@ -40,7 +40,8 @@ export default function MessageView({ message }: { message: ChatMessage }) {
   const [showPlan, setShowPlan] = useState(false);
   const res = message.response;
   const tone = TONE[res?.status ?? "ok"];
-  const Icon = res?.analysis === null && res.answer.includes("blocked") ? ShieldAlert : tone.icon;
+  const blocked = res?.safety === "blocked";
+  const Icon = blocked ? ShieldAlert : tone.icon;
 
   const copy = async () => {
     if (!res) return;
@@ -71,6 +72,24 @@ export default function MessageView({ message }: { message: ChatMessage }) {
                 {res.status !== "ok" && <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${tone.text}`} />}
                 <p className={`whitespace-pre-line text-sm leading-relaxed ${res.status === "ok" ? "" : tone.text}`}>{res.answer}</p>
               </div>
+
+              {res.safety === "validated" && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-ok/30 bg-ok/10 px-2.5 py-1 text-xs text-ok" title="The plan was checked against your schema and ran only allowlisted pandas operations.">
+                  <ShieldCheck className="h-3.5 w-3.5" /> Validated plan · no code executed
+                </span>
+              )}
+              {blocked && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-danger/30 bg-danger/10 px-2.5 py-1 text-xs text-danger">
+                  <ShieldAlert className="h-3.5 w-3.5" /> Blocked by safety checks · nothing was run
+                </span>
+              )}
+              {res.notes.length > 0 && (
+                <ul className="space-y-1 text-xs text-muted">
+                  {res.notes.map((n) => (
+                    <li key={n} className="flex items-center gap-1.5"><Info className="h-3.5 w-3.5 shrink-0 text-brand" /> {n}</li>
+                  ))}
+                </ul>
+              )}
 
               {res.stat && (
                 <div className="animate-pop-in inline-block rounded-xl border border-brand/30 bg-brand/5 px-5 py-3">

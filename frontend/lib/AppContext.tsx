@@ -160,7 +160,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       patch((m) => ({
         ...m,
         loading: false,
-        response: { status: "error", answer, analysis: null, stat: null, table: null, chart: null, planner: "", timestamp: new Date().toISOString() },
+        response: { status: "error", answer, analysis: null, stat: null, table: null, chart: null, safety: "none", notes: [], planner: "", timestamp: new Date().toISOString() },
       }));
     }
   }, []);

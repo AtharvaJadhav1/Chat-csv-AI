@@ -57,7 +57,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[240px_1fr]">
-      <aside className="sticky top-0 hidden h-screen border-r border-border bg-surface lg:block">
+      <aside className="sticky top-0 hidden h-screen border-r border-border/70 bg-bg/60 backdrop-blur lg:block">
         <SidebarContent />
       </aside>
 
@@ -74,7 +74,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       )}
 
       <div className="flex min-w-0 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-surface/90 px-4 py-3 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border/70 bg-bg/70 px-4 py-3 backdrop-blur sm:px-6">
           <button className="btn-ghost !p-2 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
             <Menu className="h-4 w-4" />
           </button>
@@ -97,7 +97,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:py-8">{children}</main>
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 lg:py-12">{children}</main>
       </div>
     </div>
   );

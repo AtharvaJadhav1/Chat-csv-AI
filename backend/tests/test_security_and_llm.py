@@ -121,3 +121,30 @@ def test_llm_outage_falls_back_to_rule_planner(client, students):
     app.dependency_overrides[get_planner] = lambda: FallbackPlanner(LLMPlanner(bad), RuleBasedPlanner())
     res = chat(client, students, "What is the average marks?")
     assert res["status"] == "ok" and res["planner"] == "rules-fallback"
+
+
+def test_successful_answers_are_marked_validated(client, students):
+    res = chat(client, students, "What is the average marks?")
+    assert res["safety"] == "validated" and res["notes"] == []
+
+
+def test_blocked_inputs_are_marked_blocked(client, students, use_llm):
+    use_llm({"intent": "aggregation", "operation": "mean", "column": "marks", "code": "__import__('os')"}, {"intent": "row_count", "sql": "x"})
+    assert chat(client, students)["safety"] == "blocked"
+
+
+def test_synonym_column_is_resolved_with_a_note(client, use_llm):
+    from .conftest import upload_bytes
+    from pathlib import Path
+    sales = Path(__file__).resolve().parents[2] / "sample_data" / "sales.csv"
+    ds = upload_bytes(client, sales.read_bytes(), "sales.csv").json()["dataset_id"]
+    use_llm({"intent": "aggregation", "operation": "sum", "column": "revenue"})
+    res = chat(client, ds, "total revenue")
+    assert res["status"] == "ok" and "total_amount" in res["answer"]
+    assert any("'revenue'" in n and "'total_amount'" in n for n in res["notes"])
+
+
+def test_unrelated_word_is_not_forced_onto_a_column(client, students, use_llm):
+    use_llm({"intent": "aggregation", "operation": "mean", "column": "salary"})
+    res = chat(client, students)
+    assert res["status"] == "error" and "couldn't find a 'salary' column" in res["answer"]

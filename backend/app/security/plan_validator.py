@@ -27,6 +27,24 @@ NUMERIC_OPS = {"mean", "median", "sum", "std"}
 ORDERING_OPERATORS = {">", ">=", "<", "<="}
 
 
+SYNONYM_GROUPS = [
+    {"revenue", "sales", "turnover", "earnings", "income", "amount", "total"},
+    {"salary", "wage", "pay", "ctc", "compensation", "income"},
+    {"marks", "mark", "score", "grade", "points", "result", "gpa", "cgpa"},
+    {"price", "cost", "rate", "fee"},
+    {"quantity", "qty", "units"},
+    {"rating", "stars", "review"},
+    {"city", "town", "location"},
+    {"department", "dept", "division", "branch"},
+    {"gender", "sex"},
+    {"date", "day"},
+]
+
+
+def _tokens(name: str) -> set[str]:
+    return {_singular(t) for t in re.split(r"[^a-z0-9]+", name.lower()) if t}
+
+
 def _norm(name: str) -> str:
     return re.sub(r"[\s_\-]+", "", name.strip().lower())
 
@@ -40,6 +58,26 @@ class SchemaResolver:
         self.profile = profile
         self.kinds = {c.name: c.kind for c in profile.column_profiles}
         self.names = list(self.kinds)
+        self.notes: list[str] = []
+
+    def synonym(self, ref: str, kind: str | None) -> str | None:
+        """Maps a word the user (or LLM) used onto a real column via common synonyms, e.g. revenue -> total_amount."""
+        wanted: set[str] = set()
+        for token in _tokens(ref):
+            for group in SYNONYM_GROUPS:
+                if token in {_singular(g) for g in group}:
+                    wanted |= {_singular(g) for g in group}
+        wanted -= _tokens(ref)
+        if not wanted:
+            return None
+        for name in self.names:
+            if self.kinds[name] == "numeric" and kind != "numeric" and kind is not None:
+                continue
+            if kind == "numeric" and self.kinds[name] != "numeric":
+                continue
+            if _tokens(name) & wanted:
+                return name
+        return None
 
     def find(self, ref: str) -> str | None:
         ref = ref.strip()
@@ -66,6 +104,10 @@ class SchemaResolver:
         found = self.find(str(ref))
         if found:
             return found
+        guess = self.synonym(str(ref), kind)
+        if guess:
+            self.notes.append(f"Interpreted '{ref}' as the '{guess}' column.")
+            return guess
         label = "numeric columns" if kind == "numeric" else "columns"
         lines = [f"I couldn't find a '{ref}' column in your dataset."]
         close = difflib.get_close_matches(str(ref), self.names, n=1, cutoff=0.6)
@@ -143,6 +185,11 @@ def _validate_chart(resolver: SchemaResolver, chart: ChartRequest | None) -> Cha
 
 def validate_plan(plan: AnalysisPlan, profile: DatasetProfile) -> AnalysisPlan:
     """Return a copy of the plan with resolved column names, or raise PlanError."""
+    return validate_plan_with_notes(plan, profile)[0]
+
+
+def validate_plan_with_notes(plan: AnalysisPlan, profile: DatasetProfile) -> tuple[AnalysisPlan, list[str]]:
+    """Like validate_plan, also returning notes about any column the resolver had to interpret."""
     if plan.intent == "unsupported":
         raise PlanError(
             plan.message or "This question cannot be answered from the uploaded dataset.", status="unsupported"
@@ -249,4 +296,4 @@ def validate_plan(plan: AnalysisPlan, profile: DatasetProfile) -> AnalysisPlan:
     elif intent == "filter":
         pass
 
-    return plan.model_copy(update=upd)
+    return plan.model_copy(update=upd), list(dict.fromkeys(r.notes))

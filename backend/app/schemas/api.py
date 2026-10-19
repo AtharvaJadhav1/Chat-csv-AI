@@ -108,6 +108,8 @@ class ChatResponse(BaseModel):
     stat: Optional[StatCard] = None
     table: Optional[TableData] = None
     chart: Optional[ChartSpec] = None
+    safety: Literal["validated", "blocked", "none"] = "none"
+    notes: list[str] = Field(default_factory=list)
     planner: str = ""
     timestamp: datetime = Field(default_factory=utcnow)
 
