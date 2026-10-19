@@ -78,7 +78,7 @@ export default function MessageView({ message }: { message: ChatMessage }) {
                 </div>
               )}
               {res.chart && <ChartView chart={res.chart} />}
-              {res.table && <ResultTable table={res.table} />}
+              {res.table && <ResultTable table={res.table} name={message.question} />}
 
               {res.analysis && (
                 <div className="rounded-lg bg-subtle/60 text-sm">

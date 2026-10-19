@@ -1,21 +1,37 @@
 "use client";
 
+import { useRef, useState } from "react";
+import { BarChart3, Download, LineChart as LineIcon, PieChart as PieIcon, AreaChart as AreaIcon } from "lucide-react";
+import { downloadChartPng, slug } from "@/lib/download";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer,
   Scatter, ScatterChart, Tooltip, XAxis, YAxis, Legend,
 } from "recharts";
 import { useApp } from "@/lib/AppContext";
-import type { ChartSpec } from "@/types";
+import type { ChartSpec, ChartType } from "@/types";
 
 const PALETTE = ["#4f46e5", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#14b8a6", "#ec4899", "#84cc16", "#64748b"];
 
+const SWITCHABLE: { type: ChartType; label: string; icon: typeof BarChart3 }[] = [
+  { type: "bar", label: "Bar", icon: BarChart3 },
+  { type: "line", label: "Line", icon: LineIcon },
+  { type: "area", label: "Area", icon: AreaIcon },
+  { type: "pie", label: "Pie", icon: PieIcon },
+];
+
 export default function ChartView({ chart }: { chart: ChartSpec }) {
   const { theme } = useApp();
+  const [override, setOverride] = useState<ChartType | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const figureRef = useRef<HTMLElement>(null);
+  const canSwitch = SWITCHABLE.some((s) => s.type === chart.type);
+  const type = canSwitch && override ? override : chart.type;
   const dark = theme === "dark";
   const axis = dark ? "#94a3b8" : "#64748b";
   const grid = dark ? "#334155" : "#e2e8f0";
   const primary = dark ? "#818cf8" : "#4f46e5";
-  const { type, xAxis, yAxis, data } = chart;
+  const { xAxis, yAxis, data } = chart;
   const tooltipStyle = {
     contentStyle: { background: dark ? "#111827" : "#fff", border: `1px solid ${grid}`, borderRadius: 8, fontSize: 12, color: dark ? "#f1f5f9" : "#0f172a" },
   };
@@ -88,8 +104,46 @@ export default function ChartView({ chart }: { chart: ChartSpec }) {
   }
 
   return (
-    <figure className="rounded-lg border border-border p-3">
-      <figcaption className="mb-2 text-sm font-medium">{chart.title}</figcaption>
+    <figure ref={figureRef} className="rounded-lg border border-border p-3">
+      <figcaption className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-sm font-medium">{chart.title}</span>
+        <span className="flex items-center gap-1.5">
+          {canSwitch && (
+            <span className="inline-flex overflow-hidden rounded-lg border border-border" role="group" aria-label="Chart type">
+              {SWITCHABLE.map(({ type: t, label, icon: Icon }) => (
+                <button
+                  key={t}
+                  onClick={() => setOverride(t)}
+                  aria-pressed={type === t}
+                  title={`${label} chart`}
+                  className={`px-2 py-1 text-xs transition ${type === t ? "bg-brand/15 text-brand" : "text-muted hover:bg-subtle"}`}
+                >
+                  <Icon className="h-3.5 w-3.5" aria-label={`${label} chart`} />
+                </button>
+              ))}
+            </span>
+          )}
+          <button
+            className="btn-ghost !px-2 !py-1 text-xs"
+            disabled={saving}
+            onClick={async () => {
+              if (!figureRef.current) return;
+              setSaving(true);
+              setSaveError(null);
+              try {
+                await downloadChartPng(figureRef.current, chart.title, dark ? "#111827" : "#ffffff", `${slug(chart.title)}.png`);
+              } catch (e) {
+                setSaveError(e instanceof Error ? e.message : "Download failed.");
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            <Download className="h-3.5 w-3.5" /> PNG
+          </button>
+        </span>
+      </figcaption>
+      {saveError && <p className="mb-2 text-xs text-danger">{saveError}</p>}
       <div className="h-64 w-full sm:h-72">
         <ResponsiveContainer width="100%" height="100%">
           {body}

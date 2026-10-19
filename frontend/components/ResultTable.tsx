@@ -1,3 +1,5 @@
+import { Download } from "lucide-react";
+import { downloadCsv, slug } from "@/lib/download";
 import type { TableData } from "@/types";
 
 function format(cell: string | number | boolean | null): string {
@@ -6,7 +8,7 @@ function format(cell: string | number | boolean | null): string {
   return String(cell);
 }
 
-export default function ResultTable({ table }: { table: TableData }) {
+export default function ResultTable({ table, name = "result" }: { table: TableData; name?: string }) {
   return (
     <div>
       <div className="scroll-thin max-h-96 overflow-auto rounded-lg border border-border">
@@ -31,9 +33,14 @@ export default function ResultTable({ table }: { table: TableData }) {
           </tbody>
         </table>
       </div>
-      <p className="mt-1.5 text-xs text-muted">
-        {table.truncated ? `Showing ${table.rows.length} of ${table.total_rows.toLocaleString()} rows` : `${table.total_rows.toLocaleString()} row${table.total_rows === 1 ? "" : "s"}`}
-      </p>
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <p className="text-xs text-muted">
+          {table.truncated ? `Showing ${table.rows.length} of ${table.total_rows.toLocaleString()} rows` : `${table.total_rows.toLocaleString()} row${table.total_rows === 1 ? "" : "s"}`}
+        </p>
+        <button className="btn-ghost !px-2 !py-1 text-xs" onClick={() => downloadCsv(table.columns, table.rows, `${slug(name)}.csv`)}>
+          <Download className="h-3.5 w-3.5" /> Download CSV
+        </button>
+      </div>
     </div>
   );
 }
