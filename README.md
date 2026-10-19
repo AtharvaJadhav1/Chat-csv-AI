@@ -4,7 +4,7 @@
 
 Upload any CSV file and ask questions in plain English. ChatCSV AI turns each question into a **structured, validated analysis plan**, runs it with **allowlisted pandas operations**, and returns a grounded answer, table or chart. This is the solution for **PS 91 - Chat-with-your-CSV Tool**.
 
-![Python](https://img.shields.io/badge/Python-3.11-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688) ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![pandas](https://img.shields.io/badge/pandas-2.2-150458) ![Tests](https://img.shields.io/badge/tests-69%20passing-brightgreen)
+![Python](https://img.shields.io/badge/Python-3.11-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688) ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![pandas](https://img.shields.io/badge/pandas-2.2-150458) ![Tests](https://img.shields.io/badge/tests-90%20passing-brightgreen)
 
 ## Quick start
 
@@ -57,7 +57,7 @@ Keeping the LLM (`services/planner.py`, `llm_client.py`, `prompts.py`), security
 chatcsv-ai/
 ├── backend/
 │   ├── app/{main.py, config.py, api/, services/, models/, schemas/, utils/, security/}
-│   ├── tests/            # 69 pytest tests
+│   ├── tests/            # 90 pytest tests
 │   ├── requirements.txt, pytest.ini, Dockerfile
 ├── frontend/
 │   ├── app/              # pages: / /dataset /chat /insights /history /settings
@@ -133,7 +133,7 @@ If no API key is set, a deterministic **rule-based planner** produces the same `
 
 ### Supported analytics
 
-Row count, column count, column listing, mean, median, min, max, sum, count, std, unique values / distinct counts, value frequency, filtering (`==, !=, >, >=, <, <=, contains, in, not_in, is_null, not_null`), sorting, group-by + aggregation, top N, bottom N, missing-value analysis, Pearson correlation (pair or matrix), distribution (histogram), percentages, descriptive statistics, ranking/comparison (group-by with ordering), date grouping (year/month/day/weekday), date-range filters, and two-column grouping ("total amount by category and region"). Nothing outside this list is claimed.
+Row count, column count, column listing, mean, median, min, max, sum, count, std, unique values / distinct counts, value frequency, filtering (`==, !=, >, >=, <, <=, contains, in, not_in, is_null, not_null`), sorting, group-by + aggregation, top N, bottom N, missing-value analysis, Pearson correlation (pair or matrix), distribution (histogram), percentages, descriptive statistics, ranking/comparison (group-by with ordering), date grouping (year/month/day/weekday), date-range filters, **OR / NOT filters** ("marks above 90 or attendance below 60", "not from CSE"), **text filters** (starts with / ends with / contains), **percentiles and quartiles** ("90th percentile of marks", also per group), **top/bottom X%** of rows, **rank lookup** ("rank of Kavya Bose by marks"), **outlier rows** via the 1.5 × IQR rule, and **pivot tables** with grouped charts ("average marks by department and gender", "crosstab of department and gender"). Nothing outside this list is claimed.
 
 ## Security design
 
@@ -182,7 +182,7 @@ cd backend
 pytest -q
 ```
 
-69 tests cover upload, invalid/empty/malformed/binary CSVs, encodings, duplicate columns, profiling, row count, averages, group-by, filtering, sorting, top/bottom N, chart generation, unknown column, unsupported questions, empty results, missing values, malicious AI plans (code/SQL/URL injection), invalid AI JSON (+retry), LLM failure, hallucinated columns, type errors, large-file/row limits, date grouping, history and the streaming endpoint. LLM behaviour is tested with a scripted fake client, so tests need no API key or network.
+90 tests cover upload, invalid/empty/malformed/binary CSVs, encodings, duplicate columns, profiling, row count, averages, group-by, filtering, sorting, top/bottom N, chart generation, unknown column, unsupported questions, empty results, missing values, malicious AI plans (code/SQL/URL injection), invalid AI JSON (+retry), LLM failure, hallucinated columns, type errors, large-file/row limits, date grouping, history and the streaming endpoint. LLM behaviour is tested with a scripted fake client, so tests need no API key or network.
 
 ## Sample questions
 
@@ -205,6 +205,12 @@ Using `sample_data/students.csv` (click **Try sample students.csv** in the UI):
 15. What is the correlation between marks and attendance?
 16. What is the weather in Pune? *(refused: not in the dataset)*
 17. What's the average salary? *(unknown column: lists available columns)*
+18. Show students with marks above 90 or attendance below 60
+19. What is the 90th percentile of marks?
+20. Show the top 10% of students by marks
+21. What is the rank of Kavya Bose by marks?
+22. Show outliers in marks
+23. Average marks by department and gender *(pivot table + grouped chart)*
 
 ## Known limitations
 

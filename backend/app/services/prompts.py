@@ -17,14 +17,18 @@ PLAN FORMAT (all keys optional except "intent"):
   "intent": one of
      "row_count" | "column_count" | "list_columns" | "aggregation" | "groupby_aggregation" | "filter" |
      "top_n" | "bottom_n" | "unique_values" | "value_counts" | "missing_values" | "correlation" |
-     "distribution" | "percentage" | "describe" | "unsupported" | "clarification",
-  "operation": "mean" | "median" | "min" | "max" | "sum" | "count" | "nunique" | "std",
+     "distribution" | "percentage" | "describe" | "rank" | "outliers" | "unsupported" | "clarification",
+  "operation": "mean" | "median" | "min" | "max" | "sum" | "count" | "nunique" | "std" | "percentile",
+  "percentile": number 0-100,  // required when operation is "percentile" (median = 50, first quartile = 25)
+  "percent": number 0-100,     // top_n / bottom_n: keep the top/bottom X percent of rows instead of a fixed limit
+  "condition_logic": "and" | "or",  // how "conditions" combine; default "and"
+  "pivot": boolean,            // with group_by_2: true = pivot table (rows x columns), false = long list
   "column": string,            // main column (aggregation, top_n, bottom_n, unique_values, value_counts, distribution, describe)
   "group_by": string,          // groupby_aggregation: the category (or date) column
   "group_by_2": string,        // optional second category column ("sales by region and category")
   "target_column": string,     // groupby_aggregation: the numeric column to aggregate (omit to count rows)
   "date_grain": "year" | "month" | "day" | "weekday",   // only when group_by is a datetime column
-  "conditions": [ {"column": string, "operator": "==" | "!=" | ">" | ">=" | "<" | "<=" | "contains" | "in" | "not_in" | "is_null" | "not_null", "value": scalar or list} ],
+  "conditions": [ {"column": string, "operator": "==" | "!=" | ">" | ">=" | "<" | "<=" | "contains" | "starts_with" | "ends_with" | "in" | "not_in" | "between" | "is_null" | "not_null", "value": scalar or list} ],
   "columns": [string],         // optional columns to show for filter/top_n/bottom_n
   "sort_by": string, "order": "asc" | "desc", "limit": integer,
   "x_column": string, "y_column": string,   // correlation between two numeric columns (omit both for a full matrix)
@@ -46,6 +50,11 @@ INTENT GUIDE
 - "missing / null values": missing_values.
 - "who/which row has the highest X": top_n with column X and limit 1 (bottom_n for lowest).
 - Date ranges: filter conditions on the datetime column with ISO dates (e.g. {"column":"order_date","operator":">=","value":"2024-03-01"}). "by month/year": groupby_aggregation with group_by the date column and date_grain.
+- "rank of <row> by X" / "where does <row> stand": rank with column X and a condition that identifies the row (e.g. name == "Aarav Gupta").
+- "outliers / unusual values": outliers (column optional; omit it to scan every numeric column).
+- "90th percentile / quartile of X": aggregation with operation "percentile" and percentile 90 (works in groupby_aggregation too).
+- "top 10% of rows by X": top_n with column X and percent 10 (bottom_n for the lowest).
+- "A or B" across different columns: put both in conditions and set condition_logic "or". "not in CSE": operator "!=" or "not_in". "between 10 and 20": operator "between" with value [10, 20].
 - "by A and B": groupby_aggregation with group_by A and group_by_2 B.
 - If the user says "revenue", "sales" or another synonym, map it to the closest numeric column in the schema; never invent a column. If nothing fits, use the user's word as the column so the app can list the real columns.
 - Set chart.required true only when the user asks for a chart/plot/graph/visual.

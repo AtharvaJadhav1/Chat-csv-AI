@@ -18,7 +18,7 @@ STAT_WORDS = {
 DESC_WORDS = r"\b(highest|most|best|top|largest|biggest|maximum|greatest|higher|oldest)\b"
 ASC_WORDS = r"\b(lowest|least|fewest|worst|bottom|smallest|minimum|lower|youngest)\b"
 ROW_NOUNS = {"rows", "records", "entries", "students", "people", "items", "observations", "customers", "employees", "persons", "users", "data", "orders"}
-GENERIC = r"\b(rows?|records?|entries|columns?|fields?|dataset|csv|how many|number of|count|missing|null|total|average|mean|median|sum|maximum|minimum)\b"
+GENERIC = r"\b(rows?|records?|entries|columns?|fields?|dataset|csv|how many|number of|count|missing|null|total|average|mean|median|sum|maximum|minimum|outliers?|anomal\w+|percentile|quartile)\b"
 ANALYTIC = r"\b(show|list|find|display|give|get|how many|count|number of|which|who|percent|percentage|average|total|best|worst|top|bottom|highest|lowest|compare)\b"
 STOP_TOKENS = {"of", "the", "a", "an", "by", "per", "in", "for", "number", "all", "each", "is", "are", "there", "and", "to", "from", "with", "any", "value", "values"}
 METRIC_SYNONYMS = r"\b(sales|revenue|income|turnover|earnings)\b"
@@ -55,23 +55,81 @@ def _mentions(q: str, cols: list[ColumnProfile]) -> tuple[list[ColumnProfile], s
     return [c for _, c in sorted(found, key=lambda t: t[0])], stripped
 
 
+NEGATION = re.compile(r"\b(?:not|except|excluding|exclude|other than|outside|without|apart from)\b(?:\s+[a-z0-9]+){0,3}?\s*(?:or\s+|and\s+)?$")
+
+
 def _value_conditions(q: str, record: DatasetRecord) -> list[Condition]:
     conditions: list[Condition] = []
     df = record.df
     for c in record.profile.column_profiles:
         if c.kind != "categorical" or c.unique > 100 or (record.profile.rows and c.unique / record.profile.rows > 0.5):
             continue
-        hits = []
+        plain, negated = [], []
         for v in df[c.name].dropna().astype(str).unique():
-            if len(v) < 2 or v.replace(".", "").isdigit():
+            if len(v) < 2 or v.replace(".", "").isdigit() or v.lower() not in q:
                 continue
-            if re.search(rf"(?<![a-z0-9]){re.escape(v.lower())}(?![a-z0-9])", q):
-                hits.append(v)
-        if len(hits) == 1:
-            conditions.append(Condition(column=c.name, operator="==", value=hits[0]))
-        elif hits:
-            conditions.append(Condition(column=c.name, operator="in", value=hits))
+            m = re.search(rf"(?<![a-z0-9]){re.escape(v.lower())}(?![a-z0-9])", q)
+            if m:
+                (negated if NEGATION.search(q[max(0, m.start() - 40):m.start()]) else plain).append(v)
+        for hits, eq, many in ((plain, "==", "in"), (negated, "!=", "not_in")):
+            if len(hits) == 1:
+                conditions.append(Condition(column=c.name, operator=eq, value=hits[0]))
+            elif hits:
+                conditions.append(Condition(column=c.name, operator=many, value=hits))
     return conditions
+
+
+def _entity_conditions(q: str, record: DatasetRecord) -> list[Condition]:
+    """Exact matches of a full value from a high-cardinality text column (e.g. a person's name)."""
+    out: list[Condition] = []
+    for c in record.profile.column_profiles:
+        if c.kind != "categorical" or not record.profile.rows or c.unique / record.profile.rows <= 0.5:
+            continue
+        for v in record.df[c.name].dropna().astype(str).unique():
+            if len(v) >= 3 and v.lower() in q and re.search(rf"(?<![a-z0-9]){re.escape(v.lower())}(?![a-z0-9])", q):
+                out.append(Condition(column=c.name, operator="==", value=v))
+                break
+    return out
+
+
+def _text_conditions(q: str, mentioned: list[ColumnProfile], cols: list[ColumnProfile]) -> list[Condition]:
+    """'name starts with A', 'city ends with ore', 'product containing chair'."""
+    text_cols = [c for c in cols if c.kind == "categorical"]
+    target = next((c for c in mentioned if c.kind == "categorical"), None) or next(
+        (c for c in text_cols if "name" in c.name.lower()), None) or (text_cols[0] if text_cols else None)
+    if target is None:
+        return []
+    out: list[Condition] = []
+    word = r"(?:the\s+(?:letter\s+)?)?['\"]?([a-z0-9]+)"
+    for pattern, op in (
+        (rf"\b(?:start|starts|starting|begin|begins|beginning)\s+with\s+{word}", "starts_with"),
+        (rf"\b(?:end|ends|ending)\s+with\s+{word}", "ends_with"),
+        (rf"\b(?:contain|contains|containing)\s+{word}", "contains"),
+    ):
+        m = re.search(pattern, q)
+        if m:
+            out.append(Condition(column=target.name, operator=op, value=m.group(1)))
+    return out
+
+
+def _wants_or(q: str, conditions: list[Condition], cols: list[ColumnProfile]) -> bool:
+    """True for 'marks above 90 or attendance below 60' (different conditions joined by OR)."""
+    if len(conditions) < 2 or len({c.column for c in conditions}) < 2 or not re.search(r"\bor\b", q):
+        return False
+    keywords = r"(?:above|below|over|under|more than|less than|greater|fewer|at least|at most|older|younger|between|starts?|ends?|contains?)"
+    names = "|".join(_phrase_pattern(c.name) for c in cols)
+    values = [re.escape(str(c.value).lower()) for c in conditions if isinstance(c.value, str)]
+    list_values = [re.escape(str(v).lower()) for c in conditions if c.operator in ("in", "not_in") for v in c.value]
+    for m in re.finditer(r"\bor\b", q):
+        tail = q[m.end():m.end() + 60]
+        if list_values and re.match(rf"\s*(?:from\s+|in\s+)?(?:{'|'.join(list_values)})\b", tail):
+            continue  # "Pune or Mumbai": two values of the same column
+        words = " ".join(tail.split()[:6])
+        if re.search(rf"\b{keywords}\b", words) or re.search(names, words):
+            return True
+        if values and re.match(rf"\s*(?:from\s+|in\s+|of\s+)?(?:{'|'.join(values)})", tail):
+            return any(c.operator in (">", ">=", "<", "<=") for c in conditions)
+    return False
 
 
 def _numeric_conditions(q: str, numeric_mentions: list[ColumnProfile], extra_cols: list[ColumnProfile]) -> list[Condition]:
@@ -106,6 +164,19 @@ def _numeric_conditions(q: str, numeric_mentions: list[ColumnProfile], extra_col
             conditions.append(Condition(column=col.name, operator=op, value=float(m.group(1))))
         q = q.replace(m.group(0), " ")
     return conditions
+
+
+def _percentile(q: str) -> float | None:
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:st|nd|rd|th)?\s*percentile", q)
+    if m:
+        return float(m.group(1))
+    if re.search(r"\b(first|lower|1st)\s+quartile\b|\bq1\b", q):
+        return 25.0
+    if re.search(r"\b(second|2nd)\s+quartile\b|\bq2\b", q):
+        return 50.0
+    if re.search(r"\b(third|upper|3rd)\s+quartile\b|\bq3\b", q):
+        return 75.0
+    return None
 
 
 def _first_pos(q: str, c: ColumnProfile) -> int:
@@ -163,6 +234,14 @@ def _unsupported(profile_cols: list[ColumnProfile]) -> AnalysisPlan:
 
 
 def plan_question(question: str, record: DatasetRecord) -> AnalysisPlan:
+    plan = _plan_question(question, record)
+    q = re.sub(r"\s+", " ", question.lower().strip())
+    if _wants_or(q, plan.conditions, record.profile.column_profiles):
+        plan = plan.model_copy(update={"condition_logic": "or"})
+    return plan
+
+
+def _plan_question(question: str, record: DatasetRecord) -> AnalysisPlan:
     profile = record.profile
     cols = profile.column_profiles
     ids = {c.name for c in cols if c.is_identifier}
@@ -181,7 +260,12 @@ def plan_question(question: str, record: DatasetRecord) -> AnalysisPlan:
     value_conds = _value_conditions(q, record)
     num_conds = _numeric_conditions(q, numeric_m, cols)
     date_conds = _date_conditions(q, date_m[0] if date_m else only_date)
-    conditions = value_conds + num_conds + date_conds
+    ent_conds = _entity_conditions(q, record)
+    text_conds = _text_conditions(q, mentioned, cols)
+    conditions = value_conds + ent_conds + text_conds + num_conds + date_conds
+    pct = _percentile(q)
+    top_pct = re.search(r"\b(top|bottom|best|worst|highest|lowest)\s+(\d+(?:\.\d+)?)\s*(?:%|percent|per cent)", q)
+    pivot_word = bool(re.search(r"\bpivot|cross-?tab|matrix\b|\bgrid\b|breakdown", q))
     chart = _chart(q)
     op_all = _stat_op(q)  # "total amount by region" -> sum
     op = _stat_op(q_no_cols) or ("sum" if synonym_metric else None)  # "total amount over 5000" -> not a sum
@@ -189,11 +273,11 @@ def plan_question(question: str, record: DatasetRecord) -> AnalysisPlan:
     desc = bool(re.search(DESC_WORDS, q_no_cols))
     asc = bool(re.search(ASC_WORDS, q_no_cols))
     general = bool(re.search(GENERIC, q))
-    analytic = bool(re.search(ANALYTIC, q))
+    analytic = bool(re.search(ANALYTIC, q)) or any(w in ROW_NOUNS for w in q.split())
     grain_m = re.search(r"\b(month(?:ly)?|year(?:ly)?|day|daily|weekday|week day)\b", q)
 
     # --- scope check: nothing in the question refers to this dataset
-    if not mentioned and not general and not (value_conds and analytic) and not num_conds and not date_conds and not (grain_m and only_date):
+    if not mentioned and not general and not (value_conds and analytic) and not num_conds and not date_conds and not ent_conds and not text_conds and pct is None and not (grain_m and only_date):
         return _unsupported(cols)
 
     # --- dataset shape
@@ -209,6 +293,36 @@ def plan_question(question: str, record: DatasetRecord) -> AnalysisPlan:
     if in_cond and re.search(r"\b(compare|comparison|difference|versus|vs)\b", q) and numeric_m:
         return AnalysisPlan(intent="groupby_aggregation", group_by=in_cond.column, target_column=numeric_m[0].name,
                             operation=op or "mean", conditions=conditions, chart=chart)
+
+    # --- outliers
+    if re.search(r"outlier|anomal|unusual|extreme (?:value|row)", q):
+        return AnalysisPlan(intent="outliers", column=numeric_m[0].name if numeric_m else None, conditions=conditions)
+
+    # --- rank / standing of a specific row: "rank of Aarav Gupta by marks"
+    if re.search(r"\b(rank|ranks|ranked|ranking|standing|position|where does .{1,40} stand)\b", q) and ent_conds:
+        if not numeric_m:
+            options = ", ".join(c for c in profile.numeric_columns if c not in ids)
+            return AnalysisPlan(intent="clarification", message=f"Rank by which column? Numeric columns: {options}.")
+        return AnalysisPlan(intent="rank", column=numeric_m[0].name, conditions=ent_conds)
+
+    # --- top / bottom X percent of rows
+    if top_pct:
+        if not numeric_m:
+            options = ", ".join(c for c in profile.numeric_columns if c not in ids)
+            return AnalysisPlan(intent="clarification", message=f"Top {top_pct.group(2)}% by which column? Numeric columns: {options}.")
+        bottom_words = top_pct.group(1) in ("bottom", "worst", "lowest")
+        return AnalysisPlan(intent="bottom_n" if bottom_words else "top_n", column=numeric_m[0].name,
+                            percent=float(top_pct.group(2)), conditions=conditions)
+
+    # --- percentiles / quartiles
+    if pct is not None:
+        if not numeric_m:
+            options = ", ".join(c for c in profile.numeric_columns if c not in ids)
+            return AnalysisPlan(intent="clarification", message=f"Percentile of which column? Numeric columns: {options}.")
+        if low_card and re.search(r"\b(by|per|each)\b", q):
+            return AnalysisPlan(intent="groupby_aggregation", group_by=low_card[0].name, target_column=numeric_m[0].name,
+                                operation="percentile", percentile=pct, conditions=conditions, chart=chart)
+        return AnalysisPlan(intent="aggregation", operation="percentile", percentile=pct, column=numeric_m[0].name, conditions=conditions)
 
     # --- correlation
     if re.search(r"correlat|relationship|related|relation\b|associat|\bvs\b|versus|against", q):
@@ -256,9 +370,9 @@ def plan_question(question: str, record: DatasetRecord) -> AnalysisPlan:
 
     # --- group by one or two categories
     by_cue = bool(re.search(r"\b(by|per|each|across|for each|which|grouped)\b", q))
-    if low_card and (numeric_m or by_cue or desc or asc):
+    if low_card and (numeric_m or by_cue or desc or asc or (pivot_word and len(low_card) > 1)):
         group = low_card[0]
-        group2 = low_card[1] if len(low_card) > 1 and re.search(r"\b(by|per|each)\b", q) else None
+        group2 = low_card[1] if len(low_card) > 1 and (re.search(r"\b(by|per|each)\b", q) or pivot_word) else None
         target = numeric_m[0] if numeric_m else None
         limit = n
         if limit is None and (desc or asc) and not re.search(r"\b(by|per|each)\b", q):
@@ -270,17 +384,18 @@ def plan_question(question: str, record: DatasetRecord) -> AnalysisPlan:
                 intent="clarification",
                 message=f"Which metric should I compare {group.name} on? Try naming a numeric column, e.g. 'highest average X by {group.name}'. Numeric columns: {options}.",
             )
-        if target is None and not (desc or asc) and not re.search(r"\b(how many|count|number)\b", q) and by_cue and not re.search(r"\bwhich\b", q):
+        if target is None and not group2 and not (desc or asc) and not re.search(r"\b(how many|count|number)\b", q) and by_cue and not re.search(r"\bwhich\b", q):
             return AnalysisPlan(intent="value_counts", column=group.name, conditions=value_conds, chart=chart)
         remaining = [c for c in conditions if c.column not in (group.name, group2.name if group2 else None) or not by_cue]
         return AnalysisPlan(
             intent="groupby_aggregation", group_by=group.name, group_by_2=group2.name if group2 else None,
             target_column=target.name if target else None, operation=agg,
             order="asc" if asc and not desc else "desc", limit=limit, conditions=remaining, chart=chart,
+            pivot=True if (pivot_word and group2) else None,
         )
 
     # --- "who ..." / "which student ..." with a ranking word: return the matching row
-    rank = re.search(r"\b(top|bottom|first|last|best|worst)\b", q) or (n and (desc or asc))
+    rank = re.search(r"\b(top|bottom|first|last|best|worst|rank|ranking|ranked)\b", q) or (n and (desc or asc))
     if numeric_m and (desc or asc) and re.match(r"(who|which \w+|what \w+ (has|have|is|are))\b", q):
         return AnalysisPlan(intent="bottom_n" if asc and not desc else "top_n", column=numeric_m[0].name, limit=n or 1, conditions=conditions)
     if (desc or asc) and not numeric_m and conditions and not re.search(r"\b(how many|count|number)\b", q):

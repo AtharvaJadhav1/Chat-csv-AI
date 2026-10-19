@@ -23,11 +23,15 @@ Intent = Literal[
     "distribution",
     "percentage",
     "describe",
+    "rank",
+    "outliers",
     "unsupported",
     "clarification",
 ]
-Operation = Literal["mean", "median", "min", "max", "sum", "count", "nunique", "std"]
-Operator = Literal["==", "!=", ">", ">=", "<", "<=", "contains", "in", "not_in", "is_null", "not_null"]
+Operation = Literal["mean", "median", "min", "max", "sum", "count", "nunique", "std", "percentile"]
+Operator = Literal[
+    "==", "!=", ">", ">=", "<", "<=", "contains", "in", "not_in", "is_null", "not_null", "between", "starts_with", "ends_with"
+]
 ChartType = Literal["bar", "line", "pie", "histogram", "scatter", "area"]
 DateGrain = Literal["year", "month", "day", "weekday"]
 
@@ -36,6 +40,7 @@ MAX_LIMIT = 1000
 PLAN_FIELDS = {
     "intent", "operation", "column", "target_column", "group_by", "group_by_2", "date_grain", "conditions",
     "columns", "sort_by", "order", "limit", "x_column", "y_column", "bins", "chart", "message",
+    "condition_logic", "percentile", "percent", "pivot",
     "explanation",
 }
 
@@ -74,6 +79,10 @@ class AnalysisPlan(BaseModel):
     group_by_2: Optional[str] = None
     date_grain: Optional[DateGrain] = None
     conditions: list[Condition] = Field(default_factory=list, max_length=10)
+    condition_logic: Literal["and", "or"] = "and"
+    percentile: Optional[float] = Field(default=None, ge=0, le=100)
+    percent: Optional[float] = Field(default=None, gt=0, le=100)
+    pivot: Optional[bool] = None
     columns: list[str] = Field(default_factory=list, max_length=50)
     sort_by: Optional[str] = None
     order: Optional[Literal["asc", "desc"]] = None

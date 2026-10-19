@@ -23,7 +23,7 @@ class PlanError(Exception):
         self.status = status
 
 
-NUMERIC_OPS = {"mean", "median", "sum", "std"}
+NUMERIC_OPS = {"mean", "median", "sum", "std", "percentile"}
 ORDERING_OPERATORS = {">", ">=", "<", "<="}
 
 
@@ -165,6 +165,18 @@ def _validate_conditions(resolver: SchemaResolver, conditions: list[Condition]) 
         value = cond.value
         if cond.operator in ("is_null", "not_null"):
             value = None
+        elif cond.operator == "between":
+            if kind not in ("numeric", "datetime"):
+                raise PlanError(f"'between' only works on numeric or date columns, but '{col}' is {kind}.")
+            if not isinstance(value, list) or len(value) != 2:
+                raise PlanError(f"The 'between' filter on '{col}' needs exactly two values (low and high).")
+            value = [_coerce_value(v, kind, col) for v in value]
+        elif cond.operator in ("starts_with", "ends_with"):
+            if kind != "categorical":
+                raise PlanError(f"'{cond.operator.replace('_', ' ')}' only works on text columns, but '{col}' is {kind}.")
+            if value is None or isinstance(value, list):
+                raise PlanError(f"The filter on '{col}' needs a single text value.")
+            value = str(value).strip()
         elif cond.operator in ("in", "not_in"):
             raw = value if isinstance(value, list) else [value]
             value = [_coerce_value(v, kind, col) for v in raw]
@@ -212,6 +224,8 @@ def validate_plan_with_notes(plan: AnalysisPlan, profile: DatasetProfile) -> tup
     if intent == "aggregation":
         if op is None:
             raise PlanError("Which calculation should I perform (average, sum, count, min, max...)?", "clarification")
+        if op == "percentile" and plan.percentile is None:
+            raise PlanError("Which percentile should I calculate (for example the 90th)?", "clarification")
         col = r.resolve(plan.column or plan.target_column, "numeric" if op in NUMERIC_OPS else None)
         if col is None and op not in ("count",):
             raise PlanError("Which column should I calculate that for?", "clarification")
@@ -229,6 +243,8 @@ def validate_plan_with_notes(plan: AnalysisPlan, profile: DatasetProfile) -> tup
         target_ref = plan.target_column or (plan.column if plan.group_by else None)
         target = r.resolve(target_ref, "numeric" if (op or "mean") in NUMERIC_OPS else None)
         op = op or ("mean" if target else "count")
+        if op == "percentile" and plan.percentile is None:
+            raise PlanError("Which percentile should I calculate (for example the 90th)?", "clarification")
         if target is None and op != "count":
             raise PlanError(f"Which column should I calculate the {op} of?", "clarification")
         if target is not None:
@@ -292,6 +308,21 @@ def validate_plan_with_notes(plan: AnalysisPlan, profile: DatasetProfile) -> tup
 
     elif intent == "describe":
         upd["column"] = r.resolve(plan.column or plan.target_column)
+
+    elif intent == "rank":
+        col = r.resolve(plan.column or plan.target_column or plan.sort_by, "numeric")
+        if col is None:
+            raise PlanError("Which column should I rank by?", "clarification")
+        r.require_kind(col, {"numeric"}, f"rank rows by '{col}'")
+        if not upd["conditions"]:
+            raise PlanError("Whose rank should I find? For example: 'rank of <name> by %s'." % col, "clarification")
+        upd["column"] = col
+
+    elif intent == "outliers":
+        col = r.resolve(plan.column or plan.target_column, "numeric")
+        if col is not None:
+            r.require_kind(col, {"numeric"}, f"look for outliers in '{col}'")
+        upd["column"] = col
 
     elif intent == "filter":
         pass

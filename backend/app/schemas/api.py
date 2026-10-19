@@ -81,6 +81,7 @@ class ChartSpec(BaseModel):
     xAxis: str
     yAxis: str
     data: list[dict[str, Any]]
+    series: Optional[list[str]] = None
 
 
 class StatCard(BaseModel):

@@ -65,6 +65,7 @@ export interface ChartSpec {
   title: string;
   xAxis: string;
   yAxis: string;
+  series?: string[] | null;
   data: Record<string, string | number | null>[];
 }
 

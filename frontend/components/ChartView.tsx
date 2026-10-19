@@ -25,13 +25,17 @@ export default function ChartView({ chart }: { chart: ChartSpec }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const figureRef = useRef<HTMLElement>(null);
-  const canSwitch = SWITCHABLE.some((s) => s.type === chart.type);
+  const multi = (chart.series?.length ?? 0) > 1;
+  const options = multi ? SWITCHABLE.filter((s) => s.type !== "pie") : SWITCHABLE;
+  const canSwitch = options.some((s) => s.type === chart.type);
   const type = canSwitch && override ? override : chart.type;
   const dark = theme === "dark";
   const axis = dark ? "#94a3b8" : "#64748b";
   const grid = dark ? "#334155" : "#e2e8f0";
   const primary = dark ? datasetTheme.dark : datasetTheme.light;
   const { xAxis, yAxis, data } = chart;
+  const keys = multi ? (chart.series as string[]) : [yAxis];
+  const colorOf = (i: number) => (multi ? PALETTE[i % PALETTE.length] : primary);
   const tooltipStyle = {
     contentStyle: { background: dark ? "#111827" : "#fff", border: `1px solid ${grid}`, borderRadius: 8, fontSize: 12, color: dark ? "#f1f5f9" : "#0f172a" },
   };
@@ -50,7 +54,10 @@ export default function ChartView({ chart }: { chart: ChartSpec }) {
       body = (
         <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           {axes}
-          <Line type="monotone" dataKey={yAxis} stroke={primary} strokeWidth={2} dot={{ r: 3 }} />
+          {keys.map((k, i) => (
+            <Line key={k} type="monotone" dataKey={k} stroke={colorOf(i)} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+          ))}
+          {multi && <Legend wrapperStyle={{ fontSize: 12 }} />}
         </LineChart>
       );
       break;
@@ -58,7 +65,10 @@ export default function ChartView({ chart }: { chart: ChartSpec }) {
       body = (
         <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           {axes}
-          <Area type="monotone" dataKey={yAxis} stroke={primary} fill={primary} fillOpacity={0.2} strokeWidth={2} />
+          {keys.map((k, i) => (
+            <Area key={k} type="monotone" dataKey={k} stroke={colorOf(i)} fill={colorOf(i)} fillOpacity={0.2} strokeWidth={2} connectNulls />
+          ))}
+          {multi && <Legend wrapperStyle={{ fontSize: 12 }} />}
         </AreaChart>
       );
       break;
@@ -98,7 +108,10 @@ export default function ChartView({ chart }: { chart: ChartSpec }) {
       body = (
         <BarChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           {axes}
-          <Bar dataKey={yAxis} fill={primary} radius={[4, 4, 0, 0]} />
+          {keys.map((k, i) => (
+            <Bar key={k} dataKey={k} fill={colorOf(i)} radius={[4, 4, 0, 0]} />
+          ))}
+          {multi && <Legend wrapperStyle={{ fontSize: 12 }} />}
         </BarChart>
       );
   }
@@ -110,7 +123,7 @@ export default function ChartView({ chart }: { chart: ChartSpec }) {
         <span className="flex items-center gap-1.5">
           {canSwitch && (
             <span className="inline-flex overflow-hidden rounded-lg border border-border" role="group" aria-label="Chart type">
-              {SWITCHABLE.map(({ type: t, label, icon: Icon }) => (
+              {options.map(({ type: t, label, icon: Icon }) => (
                 <button
                   key={t}
                   onClick={() => setOverride(t)}

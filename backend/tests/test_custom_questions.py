@@ -47,10 +47,25 @@ def test_synonym_metric_and_trend(ask_s):
     assert res["chart"]["type"] == "line" and "total_amount" in res["answer"]
 
 
-def test_two_column_grouping(ask_s):
+def test_two_column_grouping_is_a_pivot_table(ask_s):
     res = ask_s("total amount by category and region")
-    assert res["table"]["total_rows"] == DF.groupby(["category", "region"]).ngroups
-    assert res["chart"]["xAxis"] == "group"
+    assert res["table"]["columns"][0] == "category" and set(res["table"]["columns"][1:]) == set(DF["region"].unique())
+    assert res["table"]["total_rows"] == DF["category"].nunique()
+    assert set(res["chart"]["series"]) == set(DF["region"].unique())
+    row = next(r for r in res["table"]["rows"] if r[0] == "Electronics")
+    cell = row[res["table"]["columns"].index("North")]
+    assert cell == pytest.approx(DF[(DF.category == "Electronics") & (DF.region == "North")]["total_amount"].sum())
+
+
+def test_long_form_when_pivot_is_disabled(client, sales):
+    from app.api.deps import get_planner
+    from app.main import app
+    from app.services.planner import LLMPlanner
+    from .conftest import FakeLLM
+    plan = {"intent": "groupby_aggregation", "group_by": "category", "group_by_2": "region", "target_column": "total_amount", "operation": "sum", "pivot": False}
+    app.dependency_overrides[get_planner] = lambda: LLMPlanner(FakeLLM(plan))
+    res = client.post("/api/chat", json={"dataset_id": sales, "question": "x"}).json()
+    assert res["table"]["total_rows"] == DF.groupby(["category", "region"]).ngroups and res["chart"]["xAxis"] == "group"
 
 
 def test_compare_named_groups(ask_s):

@@ -3,6 +3,7 @@
 Turns a *validated* AnalysisPlan into allowlisted pandas operations. There is no
 eval/exec and no dynamic code: each intent maps to a fixed function below.
 """
+import math
 from dataclasses import dataclass
 from typing import Callable
 
@@ -22,10 +23,12 @@ MAX_CHART_GROUPS = 50
 OP_LABEL = {
     "mean": "average", "median": "median", "min": "minimum", "max": "maximum",
     "sum": "sum", "count": "count", "nunique": "number of unique values", "std": "standard deviation",
+    "percentile": "percentile",
 }
 OP_PREFIX = {
     "mean": "average", "median": "median", "min": "min", "max": "max",
     "sum": "sum", "count": "count", "nunique": "unique_count", "std": "std",
+    "percentile": "percentile",
 }
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -51,11 +54,15 @@ def df_to_table(df: pd.DataFrame, max_rows: int = MAX_TABLE_ROWS) -> TableData:
     return TableData(columns=[str(c) for c in shown.columns], rows=rows, total_rows=len(df), truncated=len(df) > max_rows)
 
 
-def describe_conditions(conditions: list[Condition]) -> str:
+def describe_conditions(conditions: list[Condition], logic: str = "and") -> str:
     parts = []
     for c in conditions:
         if c.operator in ("is_null", "not_null"):
             parts.append(f"{c.column} {'is missing' if c.operator == 'is_null' else 'is present'}")
+        elif c.operator == "between":
+            parts.append(f"{c.column} is between {c.value[0]} and {c.value[1]}")
+        elif c.operator in ("starts_with", "ends_with"):
+            parts.append(f"{c.column} {c.operator.replace('_', ' ')} '{c.value}'")
         else:
             value = c.value if not isinstance(c.value, list) else ", ".join(map(str, c.value))
             shown = fmt_num(value) if isinstance(value, float) else value
@@ -63,7 +70,7 @@ def describe_conditions(conditions: list[Condition]) -> str:
                 shown = shown[:-9]
             op = {"in": "is one of", "not_in": "is not one of"}.get(c.operator, c.operator)
             parts.append(f"{c.column} {op} {shown}")
-    return " and ".join(parts)
+    return f" {logic} ".join(parts)
 
 
 def _condition_mask(df: pd.DataFrame, c: Condition) -> pd.Series:
@@ -75,6 +82,8 @@ def _condition_mask(df: pd.DataFrame, c: Condition) -> pd.Series:
         return s.notna()
     if pd.api.types.is_datetime64_any_dtype(s):
         v = [pd.Timestamp(i) for i in v] if isinstance(v, list) else pd.Timestamp(v)
+    if op == "between":
+        return ((s >= v[0]) & (s <= v[1])).fillna(False)
     if pd.api.types.is_numeric_dtype(s) or pd.api.types.is_datetime64_any_dtype(s) or pd.api.types.is_bool_dtype(s):
         compare = {
             "==": lambda: s == v, "!=": lambda: s != v, ">": lambda: s > v, ">=": lambda: s >= v,
@@ -89,30 +98,51 @@ def _condition_mask(df: pd.DataFrame, c: Condition) -> pd.Series:
         return (text != str(v).lower()).where(s.notna(), False)
     if op == "contains":
         return text.str.contains(str(v).lower(), regex=False, na=False)
+    if op == "starts_with":
+        return text.str.startswith(str(v).lower(), na=False)
+    if op == "ends_with":
+        return text.str.endswith(str(v).lower(), na=False)
     values = {str(i).lower() for i in v}
     return text.isin(values) if op == "in" else (~text.isin(values)).where(s.notna(), False)
 
 
-def apply_conditions(df: pd.DataFrame, conditions: list[Condition]) -> pd.DataFrame:
-    mask = pd.Series(True, index=df.index)
-    for c in conditions:
-        mask &= _condition_mask(df, c)
-    return df[mask]
+def apply_conditions(df: pd.DataFrame, conditions: list[Condition], logic: str = "and") -> pd.DataFrame:
+    if not conditions:
+        return df
+    masks = [_condition_mask(df, c) for c in conditions]
+    combined = masks[0]
+    for m in masks[1:]:
+        combined = (combined | m) if logic == "or" else (combined & m)
+    return df[combined]
 
 
-def where_text(conditions: list[Condition]) -> str:
-    return f" where {describe_conditions(conditions)}" if conditions else ""
+def where_text(conditions: list[Condition], logic: str = "and") -> str:
+    return f" where {describe_conditions(conditions, logic)}" if conditions else ""
 
 
-def no_rows(conditions: list[Condition]) -> ExecResult:
+def no_rows(conditions: list[Condition], logic: str = "and") -> ExecResult:
     return ExecResult(
-        answer=f"No rows match{where_text(conditions)}. Try loosening the filter.",
-        explanation=f"Filtered the dataset{where_text(conditions)}; the result was empty.",
+        answer=f"No rows match{where_text(conditions, logic)}. Try loosening the filter.",
+        explanation=f"Filtered the dataset{where_text(conditions, logic)}; the result was empty.",
     )
 
 
-def compute(s: pd.Series, op: str):
+def ordinal(n: float) -> str:
+    n = int(n) if float(n).is_integer() else n
+    if isinstance(n, int):
+        suffix = "th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+        return f"{n}{suffix}"
+    return f"{n}th"
+
+
+def op_label(plan: AnalysisPlan) -> str:
+    return f"{ordinal(plan.percentile)} percentile" if plan.operation == "percentile" and plan.percentile is not None else OP_LABEL[plan.operation]
+
+
+def compute(s: pd.Series, op: str, q: float | None = None):
     s = s.dropna()
+    if op == "percentile":
+        return None if s.empty else s.quantile((q or 0) / 100)
     if op == "count":
         return len(s)
     if op == "nunique":
@@ -181,52 +211,59 @@ def run_list_columns(df, plan, profile):
 
 
 def run_aggregation(df, plan, profile):
-    sub = apply_conditions(df, plan.conditions)
-    scope = where_text(plan.conditions)
+    sub = apply_conditions(df, plan.conditions, plan.condition_logic)
+    scope = where_text(plan.conditions, plan.condition_logic)
     if sub.empty:
-        return no_rows(plan.conditions)
+        return no_rows(plan.conditions, plan.condition_logic)
     op, col = plan.operation, plan.column
     if col is None:
         return ExecResult(
             f"There are {len(sub):,} rows{scope}.", f"Counted the rows{scope}.",
             stat=StatCard(label="Rows", value=f"{len(sub):,}"),
         )
-    value = compute(sub[col], op)
+    value = compute(sub[col], op, plan.percentile)
     if value is None:
-        raise PlanError(f"The '{col}' column has no values to calculate the {OP_LABEL[op]} from.")
+        raise PlanError(f"The '{col}' column has no values to calculate the {op_label(plan)} from.")
     shown = value.strftime("%Y-%m-%d") if isinstance(value, pd.Timestamp) else fmt_num(value)
     return ExecResult(
-        f"The {OP_LABEL[op]} of {col} is {shown}{scope}.",
-        f"Calculated the {OP_LABEL[op]} of the '{col}' column{scope} (missing values ignored).",
-        stat=StatCard(label=f"{OP_LABEL[op].capitalize()} {col}".replace("Count ", "Count of "), value=shown),
+        f"The {op_label(plan)} of {col} is {shown}{scope}.",
+        f"Calculated the {op_label(plan)} of the '{col}' column{scope} (missing values ignored).",
+        stat=StatCard(label=f"{op_label(plan).capitalize()} {col}".replace("Count ", "Count of "), value=shown),
     )
 
 
-def metric_noun(op: str, target: str | None) -> str:
-    if not target:
+def metric_noun(plan: AnalysisPlan) -> str:
+    if not plan.target_column:
         return "number of rows"
-    word = OP_LABEL[op].split()[0]
-    return target if word in target.lower() else f"{OP_LABEL[op]} {target}"
+    label = op_label(plan)
+    target = plan.target_column
+    return target if label.split()[0] in target.lower() else f"{label} {target}"
+
+
+MAX_PIVOT_COLUMNS = 12
 
 
 def run_groupby(df, plan, profile):
-    sub = apply_conditions(df, plan.conditions)
+    sub = apply_conditions(df, plan.conditions, plan.condition_logic)
     if sub.empty:
-        return no_rows(plan.conditions)
+        return no_rows(plan.conditions, plan.condition_logic)
     group, group2, target, op, grain = plan.group_by, plan.group_by_2, plan.target_column, plan.operation, plan.date_grain
+    label = op_label(plan)
     keyed = sub.assign(_key=group_key(sub[group], grain))
     keys = ["_key"] + ([group2] if group2 else [])
     if target:
-        result = keyed.groupby(keys)[target].agg(lambda s: compute(s, op))
+        result = keyed.groupby(keys)[target].agg(lambda s: compute(s, op, plan.percentile))
         out_name = target if OP_PREFIX[op] in target.lower() else f"{OP_PREFIX[op]}_{target}"
         if op == "sum" and out_name == target:
             out_name = f"sum_{target}"
+        if op == "percentile":
+            out_name = f"p{int(plan.percentile) if float(plan.percentile).is_integer() else plan.percentile}_{target}"
     else:
         result = keyed.groupby(keys).size()
         out_name = "count"
     result = pd.to_numeric(result, errors="coerce").dropna()
     if result.empty:
-        raise PlanError(f"No values were available to calculate the {OP_LABEL[op]} by {group}.")
+        raise PlanError(f"No values were available to calculate the {label} by {group}.")
     table = result.rename(out_name).reset_index().rename(columns={"_key": group})
     is_date = grain is not None
     if is_date and plan.order is None:
@@ -241,8 +278,8 @@ def run_groupby(df, plan, profile):
     shown = table.head(limit if limit and limit > 1 else 10 if limit == 1 else MAX_TABLE_ROWS)
     top = table.iloc[0]
     top_label = " / ".join(str(top[c]) for c in label_cols)
-    noun = metric_noun(op, target)
-    scope = where_text(plan.conditions)
+    noun = metric_noun(plan)
+    scope = where_text(plan.conditions, plan.condition_logic)
     by_text = " and ".join(label_cols)
     if limit == 1:
         superlative = ("highest" if descending else "lowest") if target else ("most" if descending else "fewest")
@@ -260,9 +297,24 @@ def run_groupby(df, plan, profile):
         answer = (f"Calculated the {noun} for {len(table)} {by_text} groups{scope}. "
                   f"Highest: {hi_label} ({fmt_num(hi[out_name])}); lowest: {lo_label} ({fmt_num(lo[out_name])}).")
     grain_text = f" ({grain})" if grain else ""
-    explanation = (f"Grouped the dataset by {by_text}{grain_text}{scope} and calculated the {OP_LABEL[op]} "
+    explanation = (f"Grouped the dataset by {by_text}{grain_text}{scope} and calculated the {label} "
                    f"of {target or 'row counts'}, sorted {'descending' if descending else 'ascending'}"
                    f"{' by value' if not (is_date and plan.order is None) else ' chronologically'}.")
+
+    # Two categories -> a pivot table (rows x columns) with a grouped chart, unless the user opted out.
+    if group2 and not is_date and plan.pivot is not False and table[group2].nunique() <= MAX_PIVOT_COLUMNS:
+        wide = table.pivot_table(index=group, columns=group2, values=out_name, aggfunc="first")
+        wide.columns = [str(c) for c in wide.columns]
+        wide = wide.loc[wide.mean(axis=1, skipna=True).sort_values(ascending=not descending, kind="stable").index]
+        wide = wide.head(limit if limit and limit > 1 else MAX_CHART_GROUPS)
+        flat = wide.reset_index()
+        explanation += f" Arranged as a pivot table: {group} down the side, {group2} across the top."
+        series = [str(c) for c in wide.columns]
+        wants = (plan.chart.type if plan.chart and plan.chart.type in ("bar", "line", "area") else "bar")
+        chart = make_chart(wants, f"{noun.capitalize()} by {by_text}".replace("Number of rows", "Row count"), group, series[0], flat)
+        chart.series = series
+        return ExecResult(answer, explanation, table=df_to_table(flat), chart=chart)
+
     chart = None
     wants_chart = plan.chart and plan.chart.required
     if 2 <= len(shown) <= MAX_CHART_GROUPS or (wants_chart and len(shown) >= 1):
@@ -279,9 +331,9 @@ def run_groupby(df, plan, profile):
 
 
 def run_filter(df, plan, profile):
-    sub = apply_conditions(df, plan.conditions)
+    sub = apply_conditions(df, plan.conditions, plan.condition_logic)
     if sub.empty:
-        return no_rows(plan.conditions)
+        return no_rows(plan.conditions, plan.condition_logic)
     if plan.sort_by:
         sub = sub.sort_values(plan.sort_by, ascending=plan.order == "asc", na_position="last", kind="stable")
     if plan.columns:
@@ -289,7 +341,7 @@ def run_filter(df, plan, profile):
     total = len(sub)
     if plan.limit:
         sub = sub.head(plan.limit)
-    scope = where_text(plan.conditions)
+    scope = where_text(plan.conditions, plan.condition_logic)
     if plan.conditions:
         answer = f"Found {total:,} matching rows{scope}."
         explanation = f"Filtered the dataset{scope}."
@@ -314,26 +366,126 @@ def _table_chart(plan: AnalysisPlan, table: pd.DataFrame) -> ChartSpec | None:
 def run_top_bottom(df, plan, profile):
     bottom = plan.intent == "bottom_n"
     col, n = plan.column, plan.limit or 10
-    sub = apply_conditions(df, plan.conditions).dropna(subset=[col])
+    sub = apply_conditions(df, plan.conditions, plan.condition_logic).dropna(subset=[col])
     if sub.empty:
-        return no_rows(plan.conditions)
+        return no_rows(plan.conditions, plan.condition_logic)
+    if plan.percent:
+        n = max(1, math.ceil(len(sub) * plan.percent / 100))
     sub = sub.sort_values(col, ascending=bottom, kind="stable").head(n)
     if plan.columns:
         sub = sub[plan.columns if col in plan.columns else [*plan.columns, col]]
     label = label_column(profile)
     first = sub.iloc[0]
     lead = f"{first[label]} ({fmt_num(first[col])})" if label and label in sub.columns else fmt_num(first[col])
-    scope = where_text(plan.conditions)
-    which = "bottom" if bottom else "top"
-    answer = (f"The {'lowest' if bottom else 'highest'} {col}{scope} is {lead}." if len(sub) == 1 else
-              f"Here are the {which} {len(sub)} rows by {col}{scope}. {'Lowest' if bottom else 'Highest'}: {lead}.")
-    explanation = f"Sorted the dataset by {col} in {'ascending' if bottom else 'descending'} order{scope} and kept the first {n} rows."
+    scope = where_text(plan.conditions, plan.condition_logic)
+    extreme = "Lowest" if bottom else "Highest"
+    if plan.percent:
+        answer = (f"Here are the {'bottom' if bottom else 'top'} {fmt_num(plan.percent)}% by {col} "
+                  f"({len(sub)} rows){scope}. {extreme}: {lead}.")
+        explanation = (f"Sorted by {col} ({'ascending' if bottom else 'descending'}){scope} and kept the "
+                       f"{'bottom' if bottom else 'top'} {fmt_num(plan.percent)}% of rows ({len(sub)} of the rows that have a value).")
+    elif len(sub) == 1:
+        answer = f"The {extreme.lower()} {col}{scope} is {lead}."
+        explanation = f"Sorted the dataset by {col} in {'ascending' if bottom else 'descending'} order{scope} and kept the first row."
+    else:
+        answer = f"Here are the {'bottom' if bottom else 'top'} {len(sub)} rows by {col}{scope}. {extreme}: {lead}."
+        explanation = f"Sorted the dataset by {col} in {'ascending' if bottom else 'descending'} order{scope} and kept the first {n} rows."
     return ExecResult(answer, explanation, table=df_to_table(sub), chart=_table_chart(plan, sub))
+
+
+def run_rank(df, plan, profile):
+    """Rank (1 = highest) and percentile of the matching row(s) among every row that has a value."""
+    col = plan.column
+    valid = df.dropna(subset=[col])
+    ranks = valid[col].rank(method="min", ascending=False)
+    matches = apply_conditions(valid, plan.conditions, plan.condition_logic)
+    scope = describe_conditions(plan.conditions, plan.condition_logic)
+    if matches.empty:
+        return no_rows(plan.conditions, plan.condition_logic)
+    total = len(valid)
+    out = matches.head(20).copy()
+    out["rank"] = ranks.loc[out.index].astype(int)
+    out["of"] = total
+    out["percentile"] = (100 * (valid[col].rank(method="max") .loc[out.index] / total)).round(1)
+    label = label_column(profile)
+    keep = ([label] if label and label in out.columns else []) + [col, "rank", "of", "percentile"]
+    out = out[list(dict.fromkeys(keep))].sort_values("rank")
+    first = out.iloc[0]
+    who = str(first[label]) if label and label in out.columns else scope
+    behind = 100 - first["percentile"]
+    tail = "the highest value" if int(first["rank"]) == 1 else f"ahead of {behind:.0f}% of rows"
+    answer = f"{who} ranks #{int(first['rank'])} of {total:,} by {col} ({fmt_num(first[col])}), {tail}."
+    if len(matches) > 1:
+        answer += f" {len(matches)} rows matched; the best-ranked is shown first."
+    return ExecResult(
+        answer,
+        f"Ranked all {total:,} rows with a value in '{col}' from highest (1) to lowest, then looked up rows where {scope}. "
+        "Ties share the best rank.",
+        table=df_to_table(out), stat=StatCard(label=f"Rank by {col}", value=f"#{int(first['rank'])}"),
+    )
+
+
+def _iqr_bounds(s: pd.Series) -> tuple[float, float]:
+    q1, q3 = s.quantile(0.25), s.quantile(0.75)
+    iqr = q3 - q1
+    return float(q1 - 1.5 * iqr), float(q3 + 1.5 * iqr)
+
+
+def run_outliers(df, plan, profile):
+    """Rows outside the 1.5 x IQR fences of a numeric column (or a per-column summary if none is given)."""
+    sub = apply_conditions(df, plan.conditions, plan.condition_logic)
+    scope = where_text(plan.conditions, plan.condition_logic)
+    ids = {c.name for c in profile.column_profiles if c.is_identifier}
+    if plan.column:
+        col = plan.column
+        s = sub[col].dropna()
+        if len(s) < 4:
+            raise PlanError(f"'{col}' has too few values to look for outliers.")
+        lo, hi = _iqr_bounds(s)
+        if hi == lo:
+            raise PlanError(f"'{col}' has almost no spread, so outliers can't be defined.")
+        found = sub[(sub[col] < lo) | (sub[col] > hi)].copy()
+        explanation = (f"Used the 1.5 × IQR rule on '{col}'{scope}: values below {fmt_num(lo)} or above {fmt_num(hi)} "
+                       "are flagged as outliers.")
+        if found.empty:
+            return ExecResult(f"No outliers found in {col}{scope} (typical range {fmt_num(lo)} to {fmt_num(hi)}).", explanation,
+                              stat=StatCard(label=f"Outliers in {col}", value="0"))
+        found["_dist"] = (found[col] - found[col].clip(lo, hi)).abs()
+        found = found.sort_values("_dist", ascending=False).drop(columns="_dist")
+        answer = (f"Found {len(found):,} outlier{'s' if len(found) != 1 else ''} in {col}{scope}: values outside "
+                  f"{fmt_num(lo)} to {fmt_num(hi)}. Most extreme: {fmt_num(found.iloc[0][col])}.")
+        return ExecResult(answer, explanation, table=df_to_table(found), stat=StatCard(label=f"Outliers in {col}", value=f"{len(found):,}"))
+
+    rows = []
+    for col in [c for c in profile.numeric_columns if c not in ids]:
+        s = sub[col].dropna()
+        if len(s) < 4:
+            continue
+        lo, hi = _iqr_bounds(s)
+        if hi == lo:
+            continue
+        n = int(((s < lo) | (s > hi)).sum())
+        rows.append({"column": col, "outliers": n, "lower_fence": round(lo, 2), "upper_fence": round(hi, 2)})
+    if not rows:
+        raise PlanError("There are no numeric columns with enough spread to look for outliers.")
+    table = pd.DataFrame(rows).sort_values("outliers", ascending=False, kind="stable")
+    total = int(table["outliers"].sum())
+    if total == 0:
+        return ExecResult(
+            f"No outliers found in any of the {len(table)} numeric columns{scope} (1.5 × IQR rule).",
+            "Used the 1.5 × IQR rule on every numeric column.", table=df_to_table(table), stat=StatCard(label="Outlying values", value="0"),
+        )
+    return ExecResult(
+        f"Found {total:,} outlying values across {int((table['outliers'] > 0).sum())} numeric column(s){scope}. "
+        "Ask about one column (for example 'show the outliers in <column>') to see the rows.",
+        "Used the 1.5 × IQR rule on every numeric column.", table=df_to_table(table),
+        stat=StatCard(label="Outlying values", value=f"{total:,}"),
+    )
 
 
 def run_unique_values(df, plan, profile):
     col = plan.column
-    sub = apply_conditions(df, plan.conditions)
+    sub = apply_conditions(df, plan.conditions, plan.condition_logic)
     values = sub[col].dropna().drop_duplicates()
     try:
         values = values.sort_values()
@@ -350,10 +502,10 @@ def run_unique_values(df, plan, profile):
 
 def run_value_counts(df, plan, profile):
     col = plan.column
-    sub = apply_conditions(df, plan.conditions)
+    sub = apply_conditions(df, plan.conditions, plan.condition_logic)
     series = sub[col].dropna().astype(str)
     if series.empty:
-        return no_rows(plan.conditions)
+        return no_rows(plan.conditions, plan.condition_logic)
     counts = series.value_counts()
     if plan.order == "asc":
         counts = counts.sort_values(kind="stable")
@@ -367,7 +519,7 @@ def run_value_counts(df, plan, profile):
     chart = None
     if 2 <= len(shown) <= 30:
         chart = make_chart(pick_chart_type(plan, {"bar", "pie"}, "bar"), f"Count of {col}", col, "count", shown[[col, "count"]])
-    return ExecResult(answer, f"Counted how often each value of '{col}' occurs{where_text(plan.conditions)}.",
+    return ExecResult(answer, f"Counted how often each value of '{col}' occurs{where_text(plan.conditions, plan.condition_logic)}.",
                       table=df_to_table(shown), chart=chart)
 
 
@@ -404,8 +556,8 @@ def _scatter(df: pd.DataFrame, x: str, y: str) -> list[dict]:
 
 
 def run_correlation(df, plan, profile):
-    sub = apply_conditions(df, plan.conditions)
-    scope = where_text(plan.conditions)
+    sub = apply_conditions(df, plan.conditions, plan.condition_logic)
+    scope = where_text(plan.conditions, plan.condition_logic)
     if plan.x_column:
         x, y = plan.x_column, plan.y_column
         pairs = sub[[x, y]].dropna()
@@ -444,7 +596,7 @@ def run_correlation(df, plan, profile):
 
 def run_distribution(df, plan, profile):
     col = plan.column
-    series = apply_conditions(df, plan.conditions)[col].dropna()
+    series = apply_conditions(df, plan.conditions, plan.condition_logic)[col].dropna()
     if series.empty:
         raise PlanError(f"'{col}' has no values to build a distribution from.")
     bins = plan.bins or (min(10, max(series.nunique(), 2)))
@@ -463,10 +615,10 @@ def run_distribution(df, plan, profile):
 
 
 def run_percentage(df, plan, profile):
-    matched = int(len(apply_conditions(df, plan.conditions)))
+    matched = int(len(apply_conditions(df, plan.conditions, plan.condition_logic)))
     total = len(df)
     pct = 100 * matched / total if total else 0.0
-    desc = describe_conditions(plan.conditions)
+    desc = describe_conditions(plan.conditions, plan.condition_logic)
     return ExecResult(
         f"{matched:,} of {total:,} rows ({pct:.2f}%) match {desc}.",
         f"Counted rows where {desc} and divided by the total number of rows ({total:,}).",
@@ -476,7 +628,7 @@ def run_percentage(df, plan, profile):
 
 def run_describe(df, plan, profile):
     if plan.column:
-        s = apply_conditions(df, plan.conditions)[plan.column]
+        s = apply_conditions(df, plan.conditions, plan.condition_logic)[plan.column]
         stats = s.describe()
         table = pd.DataFrame({"statistic": stats.index.astype(str), "value": [to_py(v) for v in stats.values]})
         table["value"] = table["value"].map(lambda v: round(v, 2) if isinstance(v, float) else v)
@@ -505,6 +657,8 @@ HANDLERS: dict[str, Callable] = {
     "distribution": run_distribution,
     "percentage": run_percentage,
     "describe": run_describe,
+    "rank": run_rank,
+    "outliers": run_outliers,
 }
 
 
