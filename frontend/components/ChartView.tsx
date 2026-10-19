@@ -10,7 +10,6 @@ import {
 import { useApp } from "@/lib/AppContext";
 import type { ChartSpec, ChartType } from "@/types";
 
-const PALETTE = ["#4f46e5", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#14b8a6", "#ec4899", "#84cc16", "#64748b"];
 
 const SWITCHABLE: { type: ChartType; label: string; icon: typeof BarChart3 }[] = [
   { type: "bar", label: "Bar", icon: BarChart3 },
@@ -20,7 +19,8 @@ const SWITCHABLE: { type: ChartType; label: string; icon: typeof BarChart3 }[] =
 ];
 
 export default function ChartView({ chart }: { chart: ChartSpec }) {
-  const { theme } = useApp();
+  const { theme, datasetTheme } = useApp();
+  const PALETTE = datasetTheme.palette;
   const [override, setOverride] = useState<ChartType | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -30,7 +30,7 @@ export default function ChartView({ chart }: { chart: ChartSpec }) {
   const dark = theme === "dark";
   const axis = dark ? "#94a3b8" : "#64748b";
   const grid = dark ? "#334155" : "#e2e8f0";
-  const primary = dark ? "#818cf8" : "#4f46e5";
+  const primary = dark ? datasetTheme.dark : datasetTheme.light;
   const { xAxis, yAxis, data } = chart;
   const tooltipStyle = {
     contentStyle: { background: dark ? "#111827" : "#fff", border: `1px solid ${grid}`, borderRadius: 8, fontSize: 12, color: dark ? "#f1f5f9" : "#0f172a" },

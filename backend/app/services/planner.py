@@ -86,6 +86,10 @@ class FallbackPlanner:
         self._local = threading.local()
 
     @property
+    def configured_name(self) -> str:
+        return self.primary.name
+
+    @property
     def name(self) -> str:
         return getattr(self._local, "name", self.primary.name)
 

@@ -58,8 +58,11 @@ export default function UploadZone({ compact = false }: { compact?: boolean }) {
               <button className="btn-primary" onClick={() => inputRef.current?.click()}>
                 Browse file
               </button>
-              <button className="btn-ghost" onClick={() => void load_sample()}>
+              <button className="btn-ghost" onClick={() => void load_sample("students.csv")}>
                 <FlaskConical className="h-4 w-4" /> Try sample students.csv
+              </button>
+              <button className="btn-ghost" onClick={() => void load_sample("sales.csv")}>
+                <FlaskConical className="h-4 w-4" /> Try sample sales.csv
               </button>
             </div>
           </>

@@ -7,6 +7,7 @@ import type { ChatMessage, Stage } from "@/types";
 import ChartView from "@/components/ChartView";
 import ResultTable from "@/components/ResultTable";
 import { Spinner } from "@/components/Common";
+import CountUp from "@/components/CountUp";
 
 const STAGES: { key: Stage; label: string }[] = [
   { key: "analyzing", label: "Analyzing your dataset..." },
@@ -53,7 +54,7 @@ export default function MessageView({ message }: { message: ChatMessage }) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="animate-fade-up space-y-3">
       <div className="flex items-start justify-end gap-2.5">
         <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-brand px-4 py-2.5 text-sm text-brand-fg">{message.question}</div>
         <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-subtle text-muted"><User className="h-4 w-4" /></span>
@@ -72,9 +73,9 @@ export default function MessageView({ message }: { message: ChatMessage }) {
               </div>
 
               {res.stat && (
-                <div className="inline-block rounded-xl border border-border bg-subtle/60 px-5 py-3">
+                <div className="animate-pop-in inline-block rounded-xl border border-brand/30 bg-brand/5 px-5 py-3">
                   <p className="text-xs uppercase tracking-wide text-muted">{res.stat.label}</p>
-                  <p className="text-3xl font-semibold tabular-nums">{res.stat.value}</p>
+                  <p className="text-3xl font-semibold tabular-nums text-brand"><CountUp value={res.stat.value} /></p>
                 </div>
               )}
               {res.chart && <ChartView chart={res.chart} />}

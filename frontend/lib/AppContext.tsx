@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ApiError, clearServerHistory, deleteDataset, getHealth, getInsights, streamChat, uploadDataset } from "@/lib/api";
+import { DEFAULT_THEME, detectTheme, hexToRgbTriplet, type DatasetTheme } from "@/lib/datasetTheme";
 import type { ChatMessage, DatasetProfile, Health, Insight, Preview } from "@/types";
 
 type UploadState = { status: "idle" | "uploading" | "processing" | "error"; progress: number; error?: string };
@@ -23,9 +24,12 @@ interface AppState {
   messages: ChatMessage[];
   insights: InsightsState;
   theme: Theme;
+  datasetTheme: DatasetTheme;
+  draft: string | null;
+  set_draft: (text: string | null) => void;
   busy: boolean;
   upload_file: (file: File) => Promise<boolean>;
-  load_sample: () => Promise<boolean>;
+  load_sample: (name?: string) => Promise<boolean>;
   remove_dataset: () => Promise<void>;
   ask: (question: string) => Promise<void>;
   retry: (messageId: string) => Promise<void>;
@@ -51,6 +55,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [insights, setInsights] = useState<InsightsState>({ status: "idle", items: [] });
   const [theme, setTheme] = useState<Theme>("light");
+  const [draft, set_draft] = useState<string | null>(null);
   const datasetRef = useRef<Dataset | null>(null);
   datasetRef.current = dataset;
 
@@ -66,9 +71,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTheme(initial);
   }, []);
 
+  const datasetTheme = useMemo(() => (dataset ? detectTheme(dataset.profile) : DEFAULT_THEME), [dataset]);
+
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
+
+  // Recolour the whole UI to match the uploaded dataset's domain.
+  useEffect(() => {
+    const root = document.documentElement.style;
+    if (!dataset) {
+      root.removeProperty("--brand");
+      return;
+    }
+    root.setProperty("--brand", hexToRgbTriplet(theme === "dark" ? datasetTheme.dark : datasetTheme.light));
+  }, [dataset, datasetTheme, theme]);
 
   const toggle_theme = useCallback(() => {
     setTheme((t) => {
@@ -114,11 +131,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [health]);
 
-  const load_sample = useCallback(async () => {
+  const load_sample = useCallback(async (name = "students.csv") => {
     try {
-      const res = await fetch("/students.csv");
+      const res = await fetch(`/${name}`);
       const blob = await res.blob();
-      return upload_file(new File([blob], "students.csv", { type: "text/csv" }));
+      return upload_file(new File([blob], name, { type: "text/csv" }));
     } catch {
       setUpload({ status: "error", progress: 0, error: "Could not load the sample dataset." });
       return false;
@@ -191,10 +208,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const busy = messages.some((m) => m.loading);
   const value = useMemo<AppState>(
     () => ({
-      health, backendError, dataset, upload, messages, insights, theme, busy,
+      health, backendError, dataset, upload, messages, insights, theme, datasetTheme, draft, set_draft, busy,
       upload_file, load_sample, remove_dataset, ask, retry, clear_chat, analyze, toggle_theme,
     }),
-    [health, backendError, dataset, upload, messages, insights, theme, busy, upload_file, load_sample, remove_dataset, ask, retry, clear_chat, analyze, toggle_theme],
+    [health, backendError, dataset, upload, messages, insights, theme, datasetTheme, draft, busy, upload_file, load_sample, remove_dataset, ask, retry, clear_chat, analyze, toggle_theme],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

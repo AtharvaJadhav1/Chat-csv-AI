@@ -65,3 +65,22 @@ body {
   background: rgb(var(--border));
   border-radius: 8px;
 }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-fade-up { animation: fade-up 0.35s ease-out both; }
+.animate-pop-in { animation: pop-in 0.25s ease-out both; }
+.lift { transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
+.lift:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgb(0 0 0 / 0.12); border-color: rgb(var(--brand) / 0.5); }
+.btn:active, .chip:active { transform: scale(0.97); }
+html { transition: background-color 0.3s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up, .animate-pop-in { animation: none; }
+  .lift, .lift:hover { transition: none; transform: none; }
+}

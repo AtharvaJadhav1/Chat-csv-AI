@@ -42,8 +42,8 @@ def build_preview(record, page: int, page_size: int, search: str | None) -> Prev
 def health(settings: Settings = Depends(settings_dep), planner: Planner = Depends(get_planner)):
     return {
         "status": "ok",
-        "planner": planner.name,
-        "llm_model": settings.llm_model if planner.name == "llm" else None,
+        "planner": getattr(planner, "configured_name", planner.name),
+        "llm_model": settings.llm_model if getattr(planner, "configured_name", planner.name) == "llm" else None,
         "max_file_size_mb": settings.max_file_size_mb,
         "max_rows": settings.max_rows,
     }
