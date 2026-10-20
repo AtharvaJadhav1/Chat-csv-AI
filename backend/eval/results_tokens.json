@@ -1,0 +1,26 @@
+{
+  "method": "tiktoken cl100k_base",
+  "system_prompt_chars": 5982,
+  "system_prompt_tokens": 1554,
+  "datasets": {
+    "students": {
+      "rows": 100,
+      "columns": 8,
+      "schema_prompt_tokens": 528,
+      "per_question_input_tokens": 2082,
+      "whole_csv_tokens": 2034,
+      "tokens_per_csv_row": 20.3,
+      "whole_csv_tokens_at_100k_rows": 2034000
+    },
+    "sales": {
+      "rows": 250,
+      "columns": 11,
+      "schema_prompt_tokens": 746,
+      "per_question_input_tokens": 2300,
+      "whole_csv_tokens": 8481,
+      "tokens_per_csv_row": 33.9,
+      "whole_csv_tokens_at_100k_rows": 3392400
+    }
+  },
+  "typical_output_tokens": 35
+}

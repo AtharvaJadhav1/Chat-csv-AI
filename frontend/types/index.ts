@@ -84,6 +84,15 @@ export interface ChatResponse {
   chart: ChartSpec | null;
   safety: "validated" | "blocked" | "none";
   notes: string[];
+  usage: {
+    latency_ms: number;
+    plan_ms: number;
+    execute_ms: number;
+    llm_calls: number;
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  } | null;
   planner: string;
   timestamp: string;
 }

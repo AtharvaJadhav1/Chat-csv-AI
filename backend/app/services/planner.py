@@ -61,6 +61,12 @@ class LLMPlanner:
     def __init__(self, client: LLMClient):
         self.client = client
 
+    def reset_usage(self) -> None:
+        getattr(self.client, "reset_usage", lambda: None)()
+
+    def usage(self) -> dict | None:
+        return getattr(self.client, "usage", lambda: None)()
+
     def plan(self, question: str, record: DatasetRecord) -> AnalysisPlan:
         prompt = build_user_prompt(question, record)
         text = self.client.complete_json(SYSTEM_PROMPT, prompt)
@@ -84,6 +90,12 @@ class FallbackPlanner:
     def __init__(self, primary: Planner, fallback: Planner):
         self.primary, self.fallback = primary, fallback
         self._local = threading.local()
+
+    def reset_usage(self) -> None:
+        getattr(self.primary, "reset_usage", lambda: None)()
+
+    def usage(self) -> dict | None:
+        return getattr(self.primary, "usage", lambda: None)()
 
     @property
     def configured_name(self) -> str:

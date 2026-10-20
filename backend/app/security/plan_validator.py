@@ -62,12 +62,11 @@ class SchemaResolver:
 
     def synonym(self, ref: str, kind: str | None) -> str | None:
         """Maps a word the user (or LLM) used onto a real column via common synonyms, e.g. revenue -> total_amount."""
-        wanted: set[str] = set()
+        wanted: set[str] = set(_tokens(ref))  # 'price' also matches the compound name 'unit_price'
         for token in _tokens(ref):
             for group in SYNONYM_GROUPS:
                 if token in {_singular(g) for g in group}:
                     wanted |= {_singular(g) for g in group}
-        wanted -= _tokens(ref)
         if not wanted:
             return None
         for name in self.names:

@@ -428,7 +428,7 @@ def _plan_question(question: str, record: DatasetRecord) -> AnalysisPlan:
         m = re.search(r"\b(?:average|avg|mean|median|sum|total|maximum|minimum|max|min)\s+(?:of\s+)?(?:the\s+)?([a-z_]+)", q)
         token = m.group(1) if m else None
         if token and token not in STOP_TOKENS and token not in ROW_NOUNS:
-            return AnalysisPlan(intent="aggregation", operation=op, column=token)
+            return AnalysisPlan(intent="aggregation", operation=op, column=token, conditions=conditions)
 
     # --- filtering
     if conditions:

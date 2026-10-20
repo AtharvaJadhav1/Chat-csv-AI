@@ -1,9 +1,10 @@
 """Orchestrates the full pipeline: question -> plan -> validate -> execute -> validate result."""
 import logging
+import time
 from typing import Iterator
 
 from ..models.dataset import DatasetRecord, DatasetStore
-from ..schemas.api import AnalysisInfo, ChatResponse, HistoryItem
+from ..schemas.api import AnalysisInfo, ChatResponse, HistoryItem, UsageInfo
 from ..schemas.plan import AnalysisPlan
 from ..security.plan_guard import PlanSecurityError, guard_question
 from ..security.plan_validator import PlanError, validate_plan_with_notes
@@ -32,11 +33,15 @@ def answer_stream(
 ) -> Iterator[tuple[str, object]]:
     """Runs the pipeline, yielding ("stage", name) as each real step begins and ("result", ChatResponse) at the end."""
     question = question.strip()
+    started = time.perf_counter()
+    marks: dict[str, float] = {}
+    getattr(planner, "reset_usage", lambda: None)()
     yield "stage", "analyzing"
     try:
         guard_question(question)
         yield "stage", "understanding"
         raw_plan = planner.plan(question, record)
+        marks["planned"] = time.perf_counter()
         yield "stage", "running"
         plan, notes = validate_plan_with_notes(raw_plan, record.profile)
         executed = execute_plan(record.df, plan, record.profile)
@@ -69,6 +74,18 @@ def answer_stream(
             planner=planner.name,
         )
 
+    finished = time.perf_counter()
+    planned = marks.get("planned", finished)
+    tokens = getattr(planner, "usage", lambda: None)() or {}
+    response.usage = UsageInfo(
+        latency_ms=round((finished - started) * 1000),
+        plan_ms=round((planned - started) * 1000),
+        execute_ms=round((finished - planned) * 1000),
+        llm_calls=tokens.get("llm_calls", 0),
+        prompt_tokens=tokens.get("prompt_tokens", 0),
+        completion_tokens=tokens.get("completion_tokens", 0),
+        total_tokens=tokens.get("total_tokens", 0),
+    )
     store.add_history(record, HistoryItem(
         question=question, answer=response.answer, intent=response.analysis.intent if response.analysis else None,
         timestamp=response.timestamp,

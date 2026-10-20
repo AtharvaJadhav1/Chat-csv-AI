@@ -148,3 +148,9 @@ def test_unrelated_word_is_not_forced_onto_a_column(client, students, use_llm):
     use_llm({"intent": "aggregation", "operation": "mean", "column": "salary"})
     res = chat(client, students)
     assert res["status"] == "error" and "couldn't find a 'salary' column" in res["answer"]
+
+
+def test_rate_limit_durations_are_parsed():
+    from app.services.llm_client import parse_duration
+    assert parse_duration("29.97s") == 29.97 and parse_duration("1m2.5s") == 62.5 and parse_duration("350ms") == pytest.approx(0.35)
+    assert parse_duration("7") == 7.0 and parse_duration(None) is None and parse_duration("soon") is None

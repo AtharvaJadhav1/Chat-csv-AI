@@ -97,6 +97,17 @@ class AnalysisInfo(BaseModel):
     plan: dict[str, Any] = Field(default_factory=dict)
 
 
+class UsageInfo(BaseModel):
+    """Performance of one answer: wall-clock time per stage and (for the LLM planner) provider-reported tokens."""
+    latency_ms: int = 0
+    plan_ms: int = 0
+    execute_ms: int = 0
+    llm_calls: int = 0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+
+
 class ChatRequest(BaseModel):
     dataset_id: str
     question: str = Field(min_length=1, max_length=1000)
@@ -111,6 +122,7 @@ class ChatResponse(BaseModel):
     chart: Optional[ChartSpec] = None
     safety: Literal["validated", "blocked", "none"] = "none"
     notes: list[str] = Field(default_factory=list)
+    usage: Optional[UsageInfo] = None
     planner: str = ""
     timestamp: datetime = Field(default_factory=utcnow)
 

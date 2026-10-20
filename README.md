@@ -4,7 +4,7 @@
 
 Upload any CSV file and ask questions in plain English. ChatCSV AI turns each question into a **structured, validated analysis plan**, runs it with **allowlisted pandas operations**, and returns a grounded answer, table or chart. This is the solution for **PS 91 - Chat-with-your-CSV Tool**.
 
-![Python](https://img.shields.io/badge/Python-3.11-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688) ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![pandas](https://img.shields.io/badge/pandas-2.2-150458) ![Tests](https://img.shields.io/badge/tests-90%20passing-brightgreen)
+![Python](https://img.shields.io/badge/Python-3.11-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688) ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![pandas](https://img.shields.io/badge/pandas-2.2-150458) ![Tests](https://img.shields.io/badge/tests-91%20passing-brightgreen)
 
 ## Quick start
 
@@ -57,7 +57,7 @@ Keeping the LLM (`services/planner.py`, `llm_client.py`, `prompts.py`), security
 chatcsv-ai/
 ├── backend/
 │   ├── app/{main.py, config.py, api/, services/, models/, schemas/, utils/, security/}
-│   ├── tests/            # 90 pytest tests
+│   ├── tests/            # 91 pytest tests
 │   ├── requirements.txt, pytest.ini, Dockerfile
 ├── frontend/
 │   ├── app/              # pages: / /dataset /chat /insights /history /settings
@@ -182,7 +182,26 @@ cd backend
 pytest -q
 ```
 
-90 tests cover upload, invalid/empty/malformed/binary CSVs, encodings, duplicate columns, profiling, row count, averages, group-by, filtering, sorting, top/bottom N, chart generation, unknown column, unsupported questions, empty results, missing values, malicious AI plans (code/SQL/URL injection), invalid AI JSON (+retry), LLM failure, hallucinated columns, type errors, large-file/row limits, date grouping, history and the streaming endpoint. LLM behaviour is tested with a scripted fake client, so tests need no API key or network.
+91 tests cover upload, invalid/empty/malformed/binary CSVs, encodings, duplicate columns, profiling, row count, averages, group-by, filtering, sorting, top/bottom N, chart generation, unknown column, unsupported questions, empty results, missing values, malicious AI plans (code/SQL/URL injection), invalid AI JSON (+retry), LLM failure, hallucinated columns, type errors, large-file/row limits, date grouping, history and the streaming endpoint. LLM behaviour is tested with a scripted fake client, so tests need no API key or network.
+
+## Evaluation (accuracy, speed, tokens)
+
+`backend/eval/` contains a reproducible evaluation. Ground truth is computed independently with pandas, so a question only passes when the **final answer** is correct.
+
+```bash
+cd backend
+pip install -r eval/requirements-eval.txt                       # tiktoken, for token counting
+PYTHONPATH=. python eval/run_eval.py --planner rules --set main      # 40 questions, offline
+PYTHONPATH=. python eval/run_eval.py --planner rules --set heldout   # 25 differently-worded questions
+PYTHONPATH=. python eval/run_eval.py --planner llm   --set main --delay 2     # uses OPENAI_* settings, no fallback
+PYTHONPATH=. python eval/token_size.py                          # tokens sent per question vs pasting the CSV
+```
+
+Results are written to `backend/eval/results_*.json`. Measured so far (rule-based planner): 40/40 on the main set; 24/25 on the held-out set at first run (the miss exposed two real bugs, since fixed and covered by a regression test), 25/25 after. AI model (`openai/gpt-oss-120b` via Groq, evaluated without the rule-based fallback): 40/40 on the main set and 23/25 on the held-out set (misses: a filtered count that dropped the filter, and a false refusal for 'missing entries'); median 1,076 ms per question (rate-limit waiting excluded) and about 2,229 tokens in / 119 out per question, as counted by the provider. On Groq's free tier this model is capped at 8,000 tokens per minute, so the LLM run paces itself and takes ~20 minutes. The LLM run records the provider's own token counts and latency per question.
+
+Every chat answer also carries a `usage` object (total / plan / execute milliseconds and, for the LLM planner, prompt and completion tokens), shown in the UI under "How this was calculated".
+
+The slide deck `docs/ChatCSV-AI-Performance-Evaluation.pptx` summarises these results in plain language.
 
 ## Sample questions
 

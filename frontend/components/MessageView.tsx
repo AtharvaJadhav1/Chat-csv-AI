@@ -110,6 +110,13 @@ export default function MessageView({ message }: { message: ChatMessage }) {
                     <div className="space-y-2 border-t border-border px-3 py-2.5">
                       <p className="text-muted">{res.analysis.explanation}</p>
                       <pre className="scroll-thin overflow-x-auto rounded-md bg-surface p-2.5 text-xs">{JSON.stringify(res.analysis.plan, null, 2)}</pre>
+                      {res.usage && (
+                        <p className="text-xs text-muted">
+                          Performance: {(res.usage.latency_ms / 1000).toFixed(2)} s total
+                          ({res.usage.plan_ms} ms to plan, {res.usage.execute_ms} ms to run)
+                          {res.usage.llm_calls > 0 && <> · LLM tokens: {res.usage.prompt_tokens.toLocaleString()} in / {res.usage.completion_tokens.toLocaleString()} out</>}
+                        </p>
+                      )}
                       <p className="text-xs text-muted">Planned by: {res.planner === "llm" ? "LLM" : res.planner === "rules-fallback" ? "rule-based planner (LLM unavailable, check the API key)" : "rule-based planner"} · executed with allowlisted pandas operations</p>
                     </div>
                   )}

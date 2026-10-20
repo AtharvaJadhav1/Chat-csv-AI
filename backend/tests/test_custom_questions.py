@@ -87,3 +87,11 @@ def test_who_questions_return_the_row(ask_s):
 def test_ambiguous_ranking_asks_for_clarification(client, students):
     res = client.post("/api/chat", json={"dataset_id": students, "question": "best student in CSE"}).json()
     assert res["status"] == "clarification" and "marks" in res["answer"]
+
+
+def test_unknown_metric_word_keeps_the_category_filter(ask_s):
+    """Regression found by the held-out evaluation: 'average price of Electronics' used to drop the filter."""
+    res = ask_s("average price of Electronics")
+    assert res["status"] == "ok"
+    assert float(res["stat"]["value"].replace(",", "")) == pytest.approx(DF[DF.category == "Electronics"].unit_price.mean(), rel=0.01)
+    assert any("'price'" in n and "'unit_price'" in n for n in res["notes"])
