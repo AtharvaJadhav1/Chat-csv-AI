@@ -89,8 +89,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
             )}
           </div>
           {health && (
-            <span className="chip hidden sm:inline-flex" title={health.planner === "llm" ? `LLM planner (${health.llm_model})` : "Rule-based planner (no API key configured)"}>
-              {health.planner === "llm" ? `AI: ${health.llm_model}` : "Offline rule planner"}
+            <span className="chip hidden sm:inline-flex" title="Questions are planned on this machine. No external LLM API is called.">
+              Offline rule planner
             </span>
           )}
           <button className="btn-ghost !p-2" onClick={toggle_theme} aria-label="Toggle dark mode">

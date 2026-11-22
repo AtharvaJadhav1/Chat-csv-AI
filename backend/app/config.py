@@ -25,7 +25,8 @@ class Settings(BaseSettings):
 
     @property
     def llm_enabled(self) -> bool:
-        return bool(self.openai_api_key.strip())
+        # Planning stays on this machine. A configured key must not call an external LLM.
+        return False
 
 
 @lru_cache

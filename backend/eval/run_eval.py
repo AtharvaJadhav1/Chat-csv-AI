@@ -25,7 +25,8 @@ from app.config import Settings, get_settings  # noqa: E402
 from app.models.dataset import DatasetStore  # noqa: E402
 from app.services.chat_service import answer_stream  # noqa: E402
 from app.services.csv_loader import load_csv  # noqa: E402
-from app.services.planner import LLMPlanner, OpenAICompatibleClient, RuleBasedPlanner  # noqa: E402
+from app.services.llm_client import OpenAICompatibleClient  # noqa: E402
+from app.services.planner import LLMPlanner, RuleBasedPlanner  # noqa: E402
 from app.services.profiler import profile_dataframe  # noqa: E402
 
 S = pd.read_csv(ROOT / "sample_data" / "students.csv")
@@ -153,7 +154,7 @@ def make_planner(kind: str, settings: Settings):
     if kind == "rules":
         return RuleBasedPlanner()
     if not settings.llm_enabled:
-        sys.exit("No OPENAI_API_KEY configured: cannot run the LLM evaluation.")
+        sys.exit("External LLM calls are disabled. Run with --planner rules.")
     client = OpenAICompatibleClient(settings)
     # Free tiers cap tokens per minute: wait politely instead of scoring a rate-limit error as a wrong answer.
     client.rate_limit_retries = 8

@@ -12,7 +12,7 @@ from ..models.dataset import DatasetRecord
 from ..schemas.plan import AnalysisPlan
 from ..security.plan_guard import guard_raw_plan
 from .heuristic_planner import plan_question
-from .llm_client import LLMClient, LLMError, OpenAICompatibleClient
+from .llm_client import LLMClient, LLMError
 from .prompts import SYSTEM_PROMPT, build_user_prompt
 
 
@@ -117,8 +117,7 @@ class FallbackPlanner:
 
 
 def build_planner(settings: Settings) -> Planner:
-    if settings.llm_enabled:
-        return FallbackPlanner(LLMPlanner(OpenAICompatibleClient(settings)), RuleBasedPlanner())
+    del settings
     return RuleBasedPlanner()
 
 

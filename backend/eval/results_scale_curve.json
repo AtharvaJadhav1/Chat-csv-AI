@@ -1,0 +1,66 @@
+[
+  {
+    "rows": 1000,
+    "file_mb": 0.1,
+    "load_s": 0.02,
+    "profile_s": 0.01,
+    "dataframe_mb": 0.4,
+    "rss_growth_mb": 2,
+    "questions_ms": {
+      "simple average": 1,
+      "group by category": 4,
+      "group by month": 8,
+      "filter": 5,
+      "top 10": 4,
+      "correlation": 5
+    }
+  },
+  {
+    "rows": 10000,
+    "file_mb": 0.9,
+    "load_s": 0.1,
+    "profile_s": 0.04,
+    "dataframe_mb": 4.5,
+    "rss_growth_mb": 0,
+    "questions_ms": {
+      "simple average": 4,
+      "group by category": 8,
+      "group by month": 41,
+      "filter": 11,
+      "top 10": 8,
+      "correlation": 8
+    }
+  },
+  {
+    "rows": 50000,
+    "file_mb": 4.7,
+    "load_s": 0.48,
+    "profile_s": 0.16,
+    "dataframe_mb": 22.4,
+    "rss_growth_mb": 14,
+    "questions_ms": {
+      "simple average": 20,
+      "group by category": 28,
+      "group by month": 189,
+      "filter": 37,
+      "top 10": 31,
+      "correlation": 25
+    }
+  },
+  {
+    "rows": 100000,
+    "file_mb": 9.4,
+    "load_s": 0.89,
+    "profile_s": 0.31,
+    "dataframe_mb": 44.9,
+    "rss_growth_mb": 20,
+    "questions_ms": {
+      "simple average": 38,
+      "group by category": 53,
+      "group by month": 367,
+      "filter": 68,
+      "top 10": 63,
+      "correlation": 44
+    }
+  }
+]

@@ -34,7 +34,7 @@ export default function SettingsPage() {
         <Row label="API URL">{API_URL}</Row>
         {health && (
           <>
-            <Row label="Question planner">{health.planner === "llm" ? `LLM (${health.llm_model})` : "Rule-based (set OPENAI_API_KEY to enable the LLM)"}</Row>
+            <Row label="Question planner">Rule-based planner on this machine</Row>
             <Row label="Max file size">{health.max_file_size_mb} MB</Row>
             <Row label="Max rows">{health.max_rows.toLocaleString()}</Row>
           </>

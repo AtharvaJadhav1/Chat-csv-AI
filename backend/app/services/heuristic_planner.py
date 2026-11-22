@@ -179,6 +179,15 @@ def _percentile(q: str) -> float | None:
     return None
 
 
+def _bool_conditions(q: str, mentioned: list[ColumnProfile]) -> list[Condition]:
+    """'how many employees work remote' -> remote == True; 'not remote' / 'on-site' -> remote == False."""
+    flags = [c for c in mentioned if c.kind == "boolean"]
+    if not flags:
+        return []
+    negated = bool(re.search(r"\b(not|non|isn't|aren't|without|never|on-?site|in-?office)\b", q))
+    return [Condition(column=flags[0].name, operator="==", value=not negated)]
+
+
 def _first_pos(q: str, c: ColumnProfile) -> int:
     m = re.search(_phrase_pattern(c.name), q)
     return m.start() if m else 10**9
@@ -340,6 +349,8 @@ def _plan_question(question: str, record: DatasetRecord) -> AnalysisPlan:
 
     # --- percentage of rows matching something
     if re.search(r"percent|percentage|proportion|share of|fraction|ratio", q):
+        if not conditions:
+            conditions = _bool_conditions(q, mentioned)
         if conditions:
             return AnalysisPlan(intent="percentage", conditions=conditions)
         if low_card:
@@ -377,7 +388,7 @@ def _plan_question(question: str, record: DatasetRecord) -> AnalysisPlan:
         limit = n
         if limit is None and (desc or asc) and not re.search(r"\b(by|per|each)\b", q):
             limit = 1
-        agg = op_all if (target and by_cue and op_all) else (op or ("mean" if target else "count"))
+        agg = "count" if target is None else (op_all if (by_cue and op_all) else (op or "mean"))
         if target is None and (desc or asc) and not re.search(r"\b(most|least|fewest|how many|number|count|popular|common|sold)\b", q):
             options = ", ".join(c for c in profile.numeric_columns if c not in ids)
             return AnalysisPlan(
@@ -413,6 +424,9 @@ def _plan_question(question: str, record: DatasetRecord) -> AnalysisPlan:
 
     # --- counting rows
     if re.search(r"\b(how many|number of|count)\b", q):
+        flag_conds = [] if conditions else _bool_conditions(q, mentioned)
+        if flag_conds:
+            return AnalysisPlan(intent="aggregation", operation="count", conditions=flag_conds)
         if cat_m and not conditions and not value_conds:
             return AnalysisPlan(intent="aggregation", operation="nunique", column=cat_m[0].name)
         if not numeric_m or num_conds:
